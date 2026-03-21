@@ -15,6 +15,12 @@ Capturing and replicating complex web sessions can be a tedious process. Har2Py 
 - **Session Management**: Maintains persistent sessions to handle cookies and headers automatically across multiple requests.
 - **Client-Side Processing**: 100% of the processing happens in the browser. No HAR data or sensitive information is ever uploaded to a server.
 - **Advanced Options**: Support for type hints, retry logic, proxy configuration, and custom timeouts.
+- **Schema Visualizer**: A built-in tool to visualize the HAR schema, helping users understand the structure of the captured data.
+
+
+
+![Har2Py Preview 2](public/preview-2.png)
+
 
 ## How It Works
 
