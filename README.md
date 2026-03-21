@@ -8,6 +8,8 @@ Har2Py is a web-based tool designed to convert HTTP Archive (HAR) files into cle
 
 Capturing and replicating complex web sessions can be a tedious process. Har2Py simplifies this by allowing developers to export sessions from a browser or MITM proxy (such as BurpSuite) and convert them directly into functional Python code. By analyzing the captured HAR data, Har2Py replicates the exact sequence of requests, including headers, cookies, and data payloads, ensuring high fidelity in the automated replication.
 
+This project was built using **Claude** and refined with other AI models in just **one hour**. Despite the rapid AI-assisted development, the primary goal remains to provide a highly functional and useful tool for the developer community.
+
 ## Key Features
 
 - **Session Replication**: Directly converts browser or proxy-captured traffic into Python scripts.
