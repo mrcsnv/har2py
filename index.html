@@ -1,0 +1,2582 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Har2Py — tls-client converter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #0d0f14;
+            --bg2: #141720;
+            --bg3: #1a1e2a;
+            --bg4: #20263a;
+            --border: rgba(255, 255, 255, 0.08);
+            --border2: rgba(255, 255, 255, 0.14);
+            --text: #e8ecf4;
+            --text2: #8b95b0;
+            --text3: #4d5570;
+            --accent: #45b649;
+            --accent2: #dce35b;
+            --accent-glow: rgba(69, 182, 73, 0.18);
+            --green: #45b649;
+            --green-bg: rgba(69, 182, 73, 0.08);
+            --amber: #ffd43b;
+            --red: #f87171;
+            --mono: 'JetBrains Mono', monospace;
+            --sans: 'JetBrains Mono', monospace;
+            --radius: 4px;
+        }
+
+        html {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--sans);
+            min-height: 100vh;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ── Header ── */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 32px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+            font-size: 17px;
+            letter-spacing: -0.3px;
+            color: var(--text);
+            text-decoration: none;
+        }
+
+
+        .logo-sub {
+            font-size: 11px;
+            font-weight: 400;
+            color: var(--text3);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        .badge {
+            font-family: var(--mono);
+            font-size: 11px;
+            padding: 3px 9px;
+            background: var(--bg3);
+            border: 1px solid var(--border2);
+            border-radius: 20px;
+            color: var(--text2);
+        }
+
+        .badge span {
+            color: var(--green);
+        }
+
+        /* ── Hero ── */
+        .hero {
+            text-align: center;
+            padding: 56px 32px 40px;
+            background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(69, 182, 73, 0.08) 0%, transparent 70%);
+        }
+
+        .hero h1 {
+            font-size: clamp(32px, 5vw, 52px);
+            font-weight: 800;
+            letter-spacing: -1.5px;
+            line-height: 1.1;
+            margin-bottom: 14px;
+        }
+
+        .hero h1 em {
+            font-style: normal;
+            color: var(--accent);
+        }
+
+        .hero p {
+            font-size: 16px;
+            color: var(--text2);
+            max-width: 520px;
+            margin: 0 auto 28px;
+            font-weight: 400;
+            line-height: 1.65;
+            font-family: var(--sans);
+        }
+
+        .pill-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .pill {
+            font-family: var(--mono);
+            font-size: 11px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--border2);
+            color: var(--text2);
+        }
+
+        .pill.green {
+            border-color: rgba(34, 211, 160, 0.3);
+            color: var(--green);
+            background: var(--green-bg);
+        }
+
+        /* ── Main layout ── */
+        main {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 28px 24px 40px;
+        }
+
+        @media (max-width: 900px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ── Panel ── */
+        .panel {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .panel-left {
+            border-right: 1px solid var(--border);
+            padding-right: 24px;
+        }
+
+        .panel-right {
+            padding-left: 24px;
+            max-width: 700px;
+            flex-shrink: 1;
+            overflow-x: hidden;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 14px;
+        }
+
+        .panel-title {
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--text3);
+        }
+
+        .panel-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* ── Drop Zone ── */
+        .drop-zone {
+            flex: 1;
+            min-height: 520px;
+            border: 1.5px dashed var(--border2);
+            border-radius: var(--radius);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            background: var(--bg2);
+        }
+
+        .drop-zone:hover,
+        .drop-zone.drag-over {
+            border-color: var(--accent);
+            background: rgba(79, 140, 255, 0.05);
+        }
+
+        .drop-zone.has-file {
+            justify-content: flex-start;
+            align-items: stretch;
+            padding: 16px;
+            cursor: default;
+        }
+
+        .drop-icon {
+            font-size: 36px;
+            opacity: 0.4;
+        }
+
+        .drop-label {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text2);
+        }
+
+        .drop-sub {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--text3);
+        }
+
+        .drop-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        /* ── HAR tree ── */
+        .har-summary {
+            background: var(--bg3);
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .har-filename {
+            font-family: var(--mono);
+            font-size: 13px;
+            color: var(--text);
+        }
+
+        .har-count {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--text3);
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .filter-row input {
+            flex: 1;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 7px 11px;
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 12px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .filter-row input:focus {
+            border-color: var(--accent);
+        }
+
+        .filter-row input::placeholder {
+            color: var(--text3);
+        }
+
+        .entry-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            overflow-y: auto;
+            max-height: calc(100vh - 420px);
+        }
+
+        .entry-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .entry-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .entry-list::-webkit-scrollbar-thumb {
+            background: var(--border2);
+            border-radius: 4px;
+        }
+
+        .entry-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.12s;
+            border: 1px solid transparent;
+        }
+
+        .entry-item:hover {
+            background: var(--bg4);
+        }
+
+        .entry-item.selected {
+            background: var(--accent-glow);
+            border-color: rgba(79, 140, 255, 0.25);
+        }
+
+        .entry-checkbox {
+            width: 15px;
+            height: 15px;
+            accent-color: var(--accent);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .entry-method {
+            font-family: var(--mono);
+            font-size: 10px;
+            font-weight: 500;
+            padding: 2px 6px;
+            border-radius: 4px;
+            min-width: 38px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .m-GET {
+            background: rgba(34, 211, 160, 0.12);
+            color: var(--green);
+        }
+
+        .m-POST {
+            background: rgba(79, 140, 255, 0.12);
+            color: var(--accent);
+        }
+
+        .m-PUT {
+            background: rgba(245, 158, 11, 0.12);
+            color: var(--amber);
+        }
+
+        .m-DELETE {
+            background: rgba(248, 113, 113, 0.12);
+            color: var(--red);
+        }
+
+        .m-PATCH {
+            background: rgba(167, 139, 250, 0.12);
+            color: #a78bfa;
+        }
+
+        .m-other {
+            background: var(--bg4);
+            color: var(--text3);
+        }
+
+        .entry-url {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text2);
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .entry-status {
+            font-family: var(--mono);
+            font-size: 11px;
+            flex-shrink: 0;
+        }
+
+        .s-2xx {
+            color: var(--green);
+        }
+
+        .s-3xx {
+            color: var(--amber);
+        }
+
+        .s-4xx {
+            color: var(--red);
+        }
+
+        .s-5xx {
+            color: var(--red);
+            opacity: 0.7;
+        }
+
+        .select-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text3);
+        }
+
+        .select-row button {
+            background: none;
+            border: none;
+            color: var(--accent);
+            cursor: pointer;
+            font-family: var(--mono);
+            font-size: 11px;
+            padding: 0;
+            text-decoration: underline;
+        }
+
+        .select-row button:hover {
+            opacity: 0.8;
+        }
+
+        /* ── Options ── */
+        .options-section {
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid var(--border);
+        }
+
+        .options-title {
+            font-size: 11px;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: var(--text3);
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .opt-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text2);
+            cursor: pointer;
+            font-family: var(--mono);
+        }
+
+        .opt-item input[type="checkbox"] {
+            accent-color: var(--accent);
+            width: 13px;
+            height: 13px;
+            cursor: pointer;
+        }
+
+        .opt-select {
+            width: 100%;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 6px 10px;
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 12px;
+            outline: none;
+            cursor: pointer;
+            grid-column: span 2;
+        }
+
+        .opt-select:focus {
+            border-color: var(--accent);
+        }
+
+        .opt-label-full {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text3);
+            grid-column: span 2;
+        }
+
+        /* ── Code output ── */
+        .code-area {
+            flex: 1; min-height: 520px; max-width: 100%; background: var(--bg2); border: 1px solid var(--border);
+            border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column;
+            position: relative;
+        }
+        .code-area pre {
+            flex: 1; max-width: 100%; overflow-x: auto; overflow-y: auto; padding: 20px; margin: 0;
+            font-family: var(--mono); font-size: 12.5px; line-height: 1.75;
+            color: var(--text); white-space: pre; tab-size: 4;
+        }
+
+        .code-area pre::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        .code-area pre::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .code-area pre::-webkit-scrollbar-thumb {
+            background: var(--border2);
+            border-radius: 3px;
+        }
+
+        .code-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            height: 100%;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .code-placeholder .icon {
+            font-size: 32px;
+            opacity: 0.2;
+        }
+
+        .code-placeholder p {
+            font-size: 14px;
+            color: var(--text3);
+            font-family: var(--mono);
+        }
+
+        /* Syntax highlight */
+        .kw {
+            color: #7dd3fc;
+        }
+
+        .fn {
+            color: #a78bfa;
+        }
+
+        .str {
+            color: #86efac;
+        }
+
+        .cm {
+            color: #4d5570;
+            font-style: italic;
+        }
+
+        .nm {
+            color: #fca5a5;
+        }
+
+        .op {
+            color: #94a3b8;
+        }
+
+        .bi {
+            color: #f0abfc;
+        }
+
+        /* ── Buttons ── */
+        .btn {
+            font-family: var(--mono);
+            font-size: 12px;
+            padding: 7px 14px;
+            border-radius: 6px;
+            border: 1px solid var(--border2);
+            background: var(--bg3);
+            color: var(--text2);
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn:hover {
+            background: var(--bg4);
+            color: var(--text);
+            border-color: var(--border2);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+            font-weight: 500;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent2);
+            border-color: var(--accent2);
+            color: #fff;
+        }
+
+        .btn-sm {
+            font-size: 11px;
+            padding: 5px 10px;
+        }
+
+        .btn-icon {
+            padding: 6px 10px;
+        }
+
+        .btn-gen {
+            width: 100%;
+            justify-content: center;
+            font-size: 13px;
+            padding: 11px;
+            margin-top: 14px;
+        }
+
+        .generate-section {
+            margin-top: 10px;
+            padding: 0 0 0 0;
+        }
+
+        /* ── Tabs ── */
+        .tab-bar {
+            display: flex;
+            gap: 2px;
+            background: var(--bg3);
+            border-radius: 8px;
+            padding: 3px;
+        }
+
+        .tab {
+            font-family: var(--mono);
+            font-size: 11px;
+            padding: 5px 14px;
+            border: none;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--text3);
+            cursor: pointer;
+            transition: all 0.15s;
+            letter-spacing: 0.5px;
+        }
+
+        .tab:hover {
+            color: var(--text2);
+        }
+
+        .tab.active {
+            background: var(--bg4);
+            color: var(--text);
+        }
+
+        .tab-pane {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        /* ── Stats ── */
+        .stats-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            height: 480px;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .stats-placeholder .icon {
+            font-size: 32px;
+            opacity: 0.2;
+        }
+
+        .stats-placeholder p {
+            font-size: 14px;
+            color: var(--text3);
+            font-family: var(--mono);
+        }
+
+        #stats-content {
+            overflow-y: auto;
+            max-height: calc(100vh - 300px);
+            padding-right: 4px;
+        }
+
+        #stats-content::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        #stats-content::-webkit-scrollbar-thumb {
+            background: var(--border2);
+            border-radius: 4px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .stat-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px 16px;
+        }
+
+        .stat-card .val {
+            font-family: var(--mono);
+            font-size: 28px;
+            font-weight: 500;
+            color: var(--text);
+            line-height: 1;
+        }
+
+        .stat-card .lbl {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text3);
+            margin-top: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-card .val.green {
+            color: var(--green);
+        }
+
+        .stat-card .val.blue {
+            color: var(--accent);
+        }
+
+        .stat-card .val.amber {
+            color: var(--amber);
+        }
+
+        .stats-section {
+            margin-bottom: 16px;
+        }
+
+        .stats-section-title {
+            font-family: var(--mono);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--text3);
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .bar-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+
+        .bar-label {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text2);
+            min-width: 70px;
+        }
+
+        .bar-track {
+            flex: 1;
+            height: 6px;
+            background: var(--bg4);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .bar-count {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text3);
+            min-width: 28px;
+            text-align: right;
+        }
+
+        .host-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 7px 10px;
+            border-radius: 6px;
+            margin-bottom: 3px;
+            background: var(--bg2);
+        }
+
+        .host-name {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--text2);
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .host-count-badge {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text3);
+            background: var(--bg4);
+            padding: 2px 7px;
+            border-radius: 10px;
+            flex-shrink: 0;
+            margin-left: 8px;
+        }
+
+        .fn-row {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            padding: 6px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .fn-idx {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text3);
+            min-width: 22px;
+        }
+
+        .fn-name {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--accent);
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .fn-method {
+            font-family: var(--mono);
+            font-size: 10px;
+            padding: 1px 6px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+
+        .fn-args {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text3);
+            flex-shrink: 0;
+        }
+
+        /* ── Schema Visualizer ── */
+        #schema-content {
+            overflow-y: auto;
+            max-height: calc(100vh - 300px);
+            padding-bottom: 20px;
+            padding-right: 4px;
+        }
+
+        #schema-content::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        #schema-content::-webkit-scrollbar-thumb {
+            background: var(--border2);
+            border-radius: 4px;
+        }
+
+        .schema-canvas-wrap {
+            overflow-x: auto;
+        }
+
+        .schema-canvas-wrap::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .schema-canvas-wrap::-webkit-scrollbar-thumb {
+            background: var(--border2);
+            border-radius: 4px;
+        }
+
+        .schema-search-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .schema-search-row input {
+            flex: 1;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 12px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .schema-search-row input:focus {
+            border-color: var(--accent);
+        }
+
+        .schema-search-row input::placeholder {
+            color: var(--text3);
+        }
+
+        .schema-search-count {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text3);
+            white-space: nowrap;
+            min-width: 60px;
+            text-align: right;
+        }
+
+        .schema-legend {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+            padding: 10px 12px;
+            background: var(--bg2);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text3);
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .schema-tooltip {
+            position: fixed;
+            background: var(--bg3);
+            border: 1px solid var(--border2);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text);
+            pointer-events: none;
+            z-index: 9999;
+            max-width: 320px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            display: none;
+            line-height: 1.65;
+        }
+
+        .schema-tooltip .tt-method {
+            font-size: 10px;
+            margin-bottom: 4px;
+        }
+
+        .schema-tooltip .tt-url {
+            color: var(--text2);
+            word-break: break-all;
+            margin-bottom: 6px;
+        }
+
+        .schema-tooltip .tt-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            color: var(--text3);
+        }
+
+        .schema-tooltip .tt-val {
+            color: var(--text);
+        }
+
+        /* ── Toast ── */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--bg3);
+            border: 1px solid var(--border2);
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--green);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.2s;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ── Footer ── */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 18px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        footer p {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text3);
+        }
+
+        footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+    <a class="logo" href="#">
+        <div>
+            <div>Har2Py</div>
+            <div class="logo-sub">tls-client converter</div>
+        </div>
+    </a>
+    <div style="display: flex; align-items: center; gap: 12px;">
+        <div class="badge">using <span>tls-client</span> library by <a href="https://github.com/bogdanfinn" target="_blank" style="color: inherit; text-decoration: underline;">bogdanfinn</a></div>
+        <a href="https://github.com/mrcsnv/har2py" target="_blank"
+            style="color: var(--text2); display: flex; align-items: center; gap: 8px; transition: color 0.2s; text-decoration: none;"
+            onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text2)'">
+            <span style="font-size: 11px; font-weight: 500;">Star on GitHub</span>
+            <svg height="20" viewBox="0 0 16 16" version="1.1" width="20" aria-hidden="true" fill="currentColor">
+                <path
+                    d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z">
+                </path>
+            </svg>
+        </a>
+    </div>
+</header>
+
+    <section class="hero">
+        <h1>Convert <em>.har</em> to Python</h1>
+        <p>Drop your browser HAR file and get a clean Python script using <strong>tls-client</strong>
+        <div class="pill-row">
+            <span class="pill">TLS fingerprinting</span>
+            <span class="pill">Session management</span>
+            <span class="pill green">tls-client</span>
+            <span class="pill">Proxy support</span>
+            <span class="pill">Type hints</span>
+        </div>
+    </section>
+
+    <main>
+        <!-- LEFT: Input panel -->
+        <div class="panel panel-left">
+            <div class="panel-header">
+                <span class="panel-title">HAR File</span>
+                <div class="panel-actions">
+                    <button class="btn btn-sm" id="btn-clear" onclick="clearAll()" style="display:none">Clear</button>
+                    <button class="btn btn-sm" onclick="loadExample()">Load example</button>
+                </div>
+            </div>
+
+            <div class="drop-zone" id="drop-zone" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)"
+                ondrop="onDrop(event)">
+                <input type="file" id="file-input" accept=".har,application/json" onchange="onFileChange(event)">
+                <div class="drop-icon" id="drop-icon"></div>
+                <div class="drop-label" id="drop-label">Drop your .har file here</div>
+                <div class="drop-sub" id="drop-sub">or click to browse</div>
+            </div>
+
+            <!-- Options section (hidden until file loaded) -->
+            <div class="options-section" id="options-section" style="display:none">
+                <div class="options-title">Options</div>
+                <div class="options-grid">
+                    <span class="opt-label-full">TLS Identifier</span>
+                    <select class="opt-select" id="opt-tls">
+                        <optgroup label="Chrome">
+                            <option value="chrome_120">chrome_120 (recommended)</option>
+                            <option value="chrome_117">chrome_117</option>
+                            <option value="chrome_116">chrome_116</option>
+                            <option value="chrome_112">chrome_112</option>
+                            <option value="chrome_111">chrome_111</option>
+                            <option value="chrome_110">chrome_110</option>
+                            <option value="chrome_109">chrome_109</option>
+                            <option value="chrome_108">chrome_108</option>
+                            <option value="chrome_107">chrome_107</option>
+                            <option value="chrome_106">chrome_106</option>
+                            <option value="chrome_105">chrome_105</option>
+                            <option value="chrome_104">chrome_104</option>
+                            <option value="chrome_103">chrome_103</option>
+                        </optgroup>
+                        <optgroup label="Firefox">
+                            <option value="firefox_120">firefox_120</option>
+                            <option value="firefox_117">firefox_117</option>
+                            <option value="firefox_110">firefox_110</option>
+                            <option value="firefox_108">firefox_108</option>
+                            <option value="firefox_104">firefox_104</option>
+                            <option value="firefox_102">firefox_102</option>
+                        </optgroup>
+                        <optgroup label="Safari">
+                            <option value="safari_16_0">safari_16_0</option>
+                            <option value="safari_15_6_1">safari_15_6_1</option>
+                            <option value="safari_15_3">safari_15_3</option>
+                        </optgroup>
+                        <optgroup label="iOS / iPadOS">
+                            <option value="safari_ios_16_0">safari_ios_16_0</option>
+                            <option value="safari_ios_15_6">safari_ios_15_6</option>
+                            <option value="safari_ios_15_5">safari_ios_15_5</option>
+                        </optgroup>
+                        <optgroup label="Android">
+                            <option value="okhttp4_android_13">okhttp4_android_13</option>
+                            <option value="okhttp4_android_12">okhttp4_android_12</option>
+                            <option value="okhttp4_android_11">okhttp4_android_11</option>
+                            <option value="okhttp4_android_10">okhttp4_android_10</option>
+                            <option value="okhttp4_android_9">okhttp4_android_9</option>
+                            <option value="okhttp4_android_8">okhttp4_android_8</option>
+                            <option value="okhttp4_android_7">okhttp4_android_7</option>
+                        </optgroup>
+                        <optgroup label="Opera">
+                            <option value="opera_91">opera_91</option>
+                            <option value="opera_90">opera_90</option>
+                            <option value="opera_89">opera_89</option>
+                        </optgroup>
+                        <option value="custom">custom (raw)</option>
+                    </select>
+                    <label class="opt-item"><input type="checkbox" id="opt-cookies" checked> include cookies</label>
+                    <label class="opt-item"><input type="checkbox" id="opt-headers" checked> include headers</label>
+                    <label class="opt-item"><input type="checkbox" id="opt-session" checked> use session</label>
+                    <label class="opt-item"><input type="checkbox" id="opt-types"> type hints</label>
+                    <label class="opt-item"><input type="checkbox" id="opt-proxy"> proxy support</label>
+                    <label class="opt-item"><input type="checkbox" id="opt-retry"> retry logic</label>
+                    <label class="opt-item"><input type="checkbox" id="opt-timeout" checked> set timeout</label>
+                    <label class="opt-item"><input type="checkbox" id="opt-comments" checked> add comments</label>
+                </div>
+
+                <div class="generate-section">
+                    <button class="btn btn-primary btn-gen" onclick="generateCode()">
+                        Generate Python script
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: Output panel -->
+        <div class="panel panel-right">
+            <div class="panel-header">
+                <div class="tab-bar">
+                    <button class="tab active" id="tab-script" onclick="switchTab('script')">Script</button>
+                    <button class="tab" id="tab-stats" onclick="switchTab('stats')">Stats</button>
+                    <button class="tab" id="tab-schema" onclick="switchTab('schema')">Schema</button>
+                </div>
+                <div class="panel-actions">
+                    <button class="btn btn-sm btn-icon" id="btn-copy" onclick="copyCode()" style="display:none">Copy</button>
+                    <button class="btn btn-sm btn-icon" id="btn-download" onclick="downloadCode()"
+                        style="display:none">Download</button>
+                </div>
+            </div>
+
+            <!-- Script tab -->
+            <div id="pane-script" class="tab-pane active">
+                <div class="code-area" id="code-area">
+                    <div class="code-placeholder" id="code-placeholder">
+                        <p>Your Python script will appear here</p>
+                        <p style="font-size:11px;color:var(--text3);margin-top:4px">Load a .har file and click Generate
+                        </p>
+                    </div>
+                    <pre id="code-output" style="display:none"></pre>
+                </div>
+            </div>
+
+            <!-- Stats tab -->
+            <div id="pane-stats" class="tab-pane" style="display:none">
+                <div class="stats-placeholder" id="stats-placeholder">
+                    <p>Generate a script to see stats</p>
+                </div>
+                <div id="stats-content" style="display:none"></div>
+            </div>
+
+            <!-- Schema tab -->
+            <div id="pane-schema" class="tab-pane" style="display:none">
+                <div class="stats-placeholder" id="schema-placeholder">
+                    <p>Generate a script to see the schema</p>
+                </div>
+                <div id="schema-content" style="display:none"></div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>Converts browser sessions to <a href="https://pypi.org/project/tls-client/" target="_blank">tls-client</a>
+            (by <a href="https://github.com/bogdanfinn" target="_blank" style="color: var(--accent);">bogdanfinn</a>) Python scripts</p>
+        <p>Runs 100% in your browser · No data uploaded</p>
+    </footer>
+
+    <div class="toast" id="toast"></div>
+    <div class="schema-tooltip" id="schema-tooltip"></div>
+
+    <script>
+        // ──────────────────────────────────────────────
+        // State
+        // ──────────────────────────────────────────────
+        let harData = null;
+        let entries = [];
+        let generatedCode = '';
+
+        const MAX_RENDER = 1000;
+
+        // ──────────────────────────────────────────────
+        // File handling
+        // ──────────────────────────────────────────────
+        function onDragOver(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('drag-over'); }
+        function onDragLeave(e) { document.getElementById('drop-zone').classList.remove('drag-over'); }
+        function onDrop(e) {
+            e.preventDefault();
+            document.getElementById('drop-zone').classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file) readFile(file);
+        }
+        function onFileChange(e) { if (e.target.files[0]) readFile(e.target.files[0]); }
+
+        function readFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    harData = JSON.parse(e.target.result);
+                    processHar(file.name);
+                } catch (err) {
+                    showToast('❌ Invalid JSON file');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function processHar(filename) {
+            if (!harData?.log?.entries?.length) {
+                showToast('❌ No entries found in HAR');
+                return;
+            }
+            entries = harData.log.entries.map((e, i) => ({
+                id: i,
+                method: e.request.method || 'GET',
+                url: e.request.url,
+                status: e.response.status,
+                entry: e,
+                selected: true,
+            }));
+
+            if (entries.length > 2000) {
+        showToast(`Loaded ${entries.length.toLocaleString()} requests — list truncated for performance. Filter to view specifics.`);
+    }
+
+            renderDropZone(filename, entries.length);
+            document.getElementById('options-section').style.display = '';
+            document.getElementById('btn-clear').style.display = '';
+        }
+
+        function renderDropZone(filename, count) {
+            const dz = document.getElementById('drop-zone');
+            dz.classList.add('has-file');
+            // Remove file input so clicking doesn't re-trigger
+            const fi = dz.querySelector('input[type=file]');
+            if (fi) fi.style.display = 'none';
+
+            dz.innerHTML = `
+    <div class="har-summary">
+      <span class="har-filename">${escHtml(filename)}</span>
+      <span class="har-count">${count} requests</span>
+    </div>
+    <div class="filter-row">
+      <input type="text" id="filter-input" placeholder="Filter by URL or method…" oninput="filterEntries(this.value)">
+    </div>
+    <div class="select-row">
+      <span id="sel-count">${count} selected</span>
+      <button onclick="selectAll(true)">all</button>
+      <button onclick="selectAll(false)">none</button>
+    </div>
+    <div class="entry-list" id="entry-list"></div>
+  `;
+            renderEntries(entries);
+        }
+
+        function renderEntries(list) {
+            const el = document.getElementById('entry-list');
+            if (!el) return;
+
+            if (list.length > MAX_RENDER) {
+                el.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text2);font-family:var(--mono);">
+      <p><strong>${list.length.toLocaleString()} requests total</strong></p>
+      <p>Showing first ${MAX_RENDER} · Use filter to narrow down</p>
+    </div>`;
+                return;
+            }
+
+            el.innerHTML = list.map(e => {
+                const mc = `m-${['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].includes(e.method) ? e.method : 'other'}`;
+                const sc = e.status >= 500 ? 's-5xx' : e.status >= 400 ? 's-4xx' : e.status >= 300 ? 's-3xx' : 's-2xx';
+                let urlShort = e.url.replace(/^https?:\/\/[^\/]+/, '');
+                if (urlShort.length > 60) {
+                    urlShort = '…' + urlShort.slice(-60);
+                }
+                return `<div class="entry-item ${e.selected ? 'selected' : ''}" id="ei-${e.id}">
+      <input class="entry-checkbox" type="checkbox" ${e.selected ? 'checked' : ''} onchange="toggleEntry(${e.id}, this.checked)" onclick="event.stopPropagation()">
+      <span class="entry-method ${mc}">${escHtml(e.method)}</span>
+      <span class="entry-url" title="${escHtml(e.url)}">${escHtml(urlShort || e.url)}</span>
+      <span class="entry-status ${sc}">${e.status || '–'}</span>
+    </div>`;
+            }).join('');
+        }
+
+        function toggleEntry(id, checked) {
+            const e = entries.find(x => x.id === id);
+            if (e) e.selected = checked;
+            const el = document.getElementById(`ei-${id}`);
+            if (el) el.classList.toggle('selected', checked);
+            updateSelCount();
+        }
+
+        function selectAll(v) {
+            entries.forEach(e => e.selected = v);
+            renderEntries(entries);
+            updateSelCount();
+        }
+
+        function filterEntries(q) {
+            const lq = q.toLowerCase();
+            const filtered = q ? entries.filter(e => e.url.toLowerCase().includes(lq) || e.method.toLowerCase().includes(lq)) : entries;
+            renderEntries(filtered);
+        }
+
+        function updateSelCount() {
+            const el = document.getElementById('sel-count');
+            if (el) el.textContent = entries.filter(e => e.selected).length + ' selected';
+        }
+
+        function clearAll() {
+            harData = null; entries = [];
+            const dz = document.getElementById('drop-zone');
+            dz.classList.remove('has-file');
+            dz.innerHTML = `
+    <input type="file" id="file-input" accept=".har,application/json" onchange="onFileChange(event)">
+    <div class="drop-icon"></div>
+    <div class="drop-label">Drop your .har file here</div>
+    <div class="drop-sub">or click to browse</div>
+  `;
+            document.getElementById('options-section').style.display = 'none';
+            document.getElementById('btn-clear').style.display = 'none';
+            hideOutput();
+        }
+
+        // ──────────────────────────────────────────────
+        // Code generation
+        // ──────────────────────────────────────────────
+        // ──────────────────────────────────────────────
+        // Token extraction engine
+        // ──────────────────────────────────────────────
+
+        // Patterns that identify interesting token-like values in response bodies / headers
+        const TOKEN_PATTERNS = [
+            // JSON field names that typically carry auth tokens
+            { key: /^(access_token|accessToken|access-token)$/i, kind: 'access_token', extract: 'json' },
+            { key: /^(refresh_token|refreshToken|refresh-token)$/i, kind: 'refresh_token', extract: 'json' },
+            { key: /^(id_token|idToken)$/i, kind: 'id_token', extract: 'json' },
+            { key: /^(token|auth_token|authToken|authorization_token)$/i, kind: 'token', extract: 'json' },
+            { key: /^(api_key|apiKey|api-key|x-api-key)$/i, kind: 'api_key', extract: 'json' },
+            { key: /^(session_token|sessionToken|session-token)$/i, kind: 'session_token', extract: 'json' },
+            { key: /^(csrf_token|csrfToken|_csrf|csrf)$/i, kind: 'csrf', extract: 'json' },
+            { key: /^(sid|session_id|sessionId)$/i, kind: 'session_id', extract: 'json' },
+            { key: /^(user_id|userId|uid)$/i, kind: 'user_id', extract: 'json' },
+            // Response headers
+            { key: /^set-cookie$/i, kind: 'cookie', extract: 'header' },
+            { key: /^x-auth-token$/i, kind: 'x_auth_token', extract: 'header' },
+            { key: /^x-csrf-token$/i, kind: 'csrf', extract: 'header' },
+            { key: /^authorization$/i, kind: 'authorization', extract: 'header' },
+            { key: /^x-session-id$/i, kind: 'session_id', extract: 'header' },
+        ];
+
+        // Detect if a string looks like a JWT
+        function isJWT(v) {
+            return typeof v === 'string' && /^[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}$/.test(v.trim());
+        }
+
+        // Detect if a string looks like a meaningful token (not a short word)
+        function looksLikeToken(v) {
+            if (typeof v !== 'string') return false;
+            const s = v.trim();
+            if (s.length < 8) return false;
+            if (isJWT(s)) return true;
+            // hex token
+            if (/^[0-9a-f]{16,}$/i.test(s)) return true;
+            // base64-ish
+            if (/^[A-Za-z0-9+/=_-]{20,}$/.test(s) && /[A-Z]/.test(s) && /[0-9]/.test(s)) return true;
+            return false;
+        }
+
+        // Parse set-cookie header into { name, value }
+        function parseCookieHeader(raw) {
+            const part = raw.split(';')[0].trim();
+            const eq = part.indexOf('=');
+            if (eq < 0) return null;
+            return { name: part.slice(0, eq).trim(), value: part.slice(eq + 1).trim() };
+        }
+
+        // Recursively walk a JSON object and collect key-path -> value pairs
+        function flattenJson(obj, prefix, out, depth) {
+            if (depth > 6 || !obj || typeof obj !== 'object') return;
+            Object.entries(obj).forEach(([k, v]) => {
+                const path = prefix ? prefix + '.' + k : k;
+                if (typeof v === 'string') out.push({ path, key: k, value: v });
+                else if (typeof v === 'object') flattenJson(v, path, out, depth + 1);
+            });
+        }
+
+        /**
+         * Analyse ALL HAR entries (not just selected) and return an array of discovered tokens:
+         * {
+         *   id,           // unique stable id, e.g. "tok_0"
+         *   kind,         // 'access_token' | 'refresh_token' | 'cookie' | ...
+         *   name,         // the field / header / cookie name
+         *   value,        // the literal value found in the HAR
+         *   source,       // 'response_body' | 'response_header' | 'request_header' (fallback)
+         *   producerIdx,  // index in allEntries of the request that produces this token
+         *   producerFn,   // python function name that produces it
+         *   extractCode,  // python snippet to extract it from `response`
+         *   jsonPath,     // dot-path if extracted from JSON body, else null
+         *   isJwt,
+         * }
+         */
+        function extractTokens(allEntries) {
+            const tokens = [];
+            let tid = 0;
+
+            allEntries.forEach((e, idx) => {
+                const resp = e.entry.response;
+                const respHeaders = resp.headers || [];
+                const respBody = resp.content && resp.content.text ? resp.content.text : null;
+
+                // 1. Response headers
+                respHeaders.forEach(h => {
+                    const pat = TOKEN_PATTERNS.find(p => p.extract === 'header' && p.key.test(h.name));
+                    if (!pat) return;
+
+                    if (pat.kind === 'cookie') {
+                        const ck = parseCookieHeader(h.value);
+                        if (!ck || !looksLikeToken(ck.value)) return;
+                        tokens.push({
+                            id: 'tok_' + tid++,
+                            kind: 'cookie',
+                            name: ck.name,
+                            value: ck.value,
+                            source: 'response_header',
+                            producerIdx: idx,
+                            producerFn: null,
+                            extractCode: `response.cookies["${ck.name}"]`,
+                            jsonPath: null,
+                            isJwt: isJWT(ck.value),
+                        });
+                    } else {
+                        if (!looksLikeToken(h.value)) return;
+                        tokens.push({
+                            id: 'tok_' + tid++,
+                            kind: pat.kind,
+                            name: h.name,
+                            value: h.value,
+                            source: 'response_header',
+                            producerIdx: idx,
+                            producerFn: null,
+                            extractCode: `response.headers["${h.name}"]`,
+                            jsonPath: null,
+                            isJwt: isJWT(h.value),
+                        });
+                    }
+                });
+
+                // 2. Response body JSON
+                if (respBody) {
+                    let parsed = null;
+                    try { parsed = JSON.parse(respBody); } catch { }
+                    if (parsed) {
+                        const flat = [];
+                        flattenJson(parsed, '', flat, 0);
+                        flat.forEach(({ path, key, value }) => {
+                            if (!looksLikeToken(value)) return;
+                            const pat = TOKEN_PATTERNS.find(p => p.extract === 'json' && p.key.test(key));
+                            const kind = pat ? pat.kind : (isJWT(value) ? 'jwt' : null);
+                            if (!kind) return;
+
+                            // Build python extract: handle nested paths
+                            const parts = path.split('.');
+                            const pyAccess = parts.map(p => `["${p}"]`).join('');
+                            tokens.push({
+                                id: 'tok_' + tid++,
+                                kind,
+                                name: key,
+                                value,
+                                source: 'response_body',
+                                producerIdx: idx,
+                                producerFn: null,
+                                extractCode: `response.json()${pyAccess}`,
+                                jsonPath: path,
+                                isJwt: isJWT(value),
+                            });
+                        });
+                    }
+                }
+            });
+
+            return tokens;
+        }
+
+        /**
+         * For each selected request, find which tokens it consumes (by matching the literal
+         * value against request headers, cookies, query params, body).
+         * Returns a Map: selIndex -> [token, ...]
+         */
+        function resolveConsumers(sel, tokens) {
+            const consumers = new Map(); // selIdx -> Set of token ids
+
+            sel.forEach((e, selIdx) => {
+                const req = e.entry.request;
+                const haystack = [];
+
+                // Collect all string values present in this request
+                (req.headers || []).forEach(h => haystack.push(h.value));
+                (req.cookies || []).forEach(c => haystack.push(c.value));
+                (req.queryString || []).forEach(q => haystack.push(q.value));
+                if (req.postData && req.postData.text) {
+                    haystack.push(req.postData.text);
+                    try {
+                        const flat = [];
+                        flattenJson(JSON.parse(req.postData.text), '', flat, 0);
+                        flat.forEach(f => haystack.push(f.value));
+                    } catch { }
+                }
+
+                const consumed = new Set();
+                tokens.forEach(tok => {
+                    // Only count tokens produced BEFORE this request (chronologically)
+                    const producerGlobalIdx = tok.producerIdx;
+                    const selfGlobalIdx = e.id; // original HAR index
+                    if (producerGlobalIdx >= selfGlobalIdx) return;
+
+                    if (haystack.some(v => v && v.includes(tok.value))) {
+                        consumed.add(tok.id);
+                    }
+                });
+
+                if (consumed.size > 0) consumers.set(selIdx, consumed);
+            });
+
+            return consumers;
+        }
+
+        // ──────────────────────────────────────────────
+        // Code generation
+        // ──────────────────────────────────────────────
+        function generateCode() {
+            const sel = entries.filter(e => e.selected);
+            if (!sel.length) { showToast('⚠️ No requests selected'); return; }
+
+            const opts = {
+                tls: document.getElementById('opt-tls').value,
+                cookies: document.getElementById('opt-cookies').checked,
+                headers: document.getElementById('opt-headers').checked,
+                session: document.getElementById('opt-session').checked,
+                types: document.getElementById('opt-types').checked,
+                proxy: document.getElementById('opt-proxy').checked,
+                retry: document.getElementById('opt-retry').checked,
+                timeout: document.getElementById('opt-timeout').checked,
+                comments: document.getElementById('opt-comments').checked,
+            };
+
+            // Run token analysis over ALL entries (so producers are found even if not selected)
+            const allTokens = extractTokens(entries);
+            const consumers = resolveConsumers(sel, allTokens);
+
+            // Assign producerFn names (needed for param generation)
+            allTokens.forEach(tok => {
+                const producerEntry = entries[tok.producerIdx];
+                if (producerEntry) {
+                    tok.producerFn = makeFnName(producerEntry.entry.request.method, producerEntry.entry.request.url, tok.producerIdx);
+                }
+            });
+
+            generatedCode = buildPython(sel, opts, allTokens, consumers);
+    showCode(generatedCode);
+    buildStats(sel, opts);
+    buildSchema(sel, allTokens, consumers);
+    showToast('Script generated');
+}
+
+        function buildPython(sel, opts, allTokens, consumers) {
+            const lines = [];
+            const T = opts.types;
+            const C = opts.comments;
+
+            // Build a lookup: token id -> token
+            const tokById = Object.fromEntries(allTokens.map(t => [t.id, t]));
+
+            lines.push('import tls_client');
+            if (opts.retry) lines.push('import time');
+            if (T) lines.push('from typing import Optional, Dict, Any');
+            lines.push('');
+
+            if (C) lines.push('# ─────────────────────────────────────────────────────────────');
+            if (C) lines.push('# Har2Py            https://github.com/mrcsnv/har2py           ');
+            if (C) lines.push('# tls-client    https://github.com/bogdanfinn/tls-client       ');
+            if (C) lines.push('# Token dependencies extracted automatically from HAR responses');
+            if (C) lines.push('# ─────────────────────────────────────────────────────────────');
+            lines.push('');
+
+            if (opts.session) {
+                if (C) lines.push('# Create a persistent session with TLS fingerprinting');
+                lines.push('session = tls_client.Session(');
+                lines.push('    client_identifier="' + opts.tls + '",');
+                lines.push('    random_tls_extension_order=True,');
+                lines.push(')');
+                if (opts.timeout) {
+                    lines.push('');
+                    if (C) lines.push('# Default timeout for all requests (seconds)');
+                    lines.push('TIMEOUT = 30');
+                }
+                if (opts.proxy) {
+                    lines.push('');
+                    if (C) lines.push('# Optional proxy — set to None to disable');
+                    lines.push('PROXY = None  # e.g. "http://user:pass@host:port"');
+                    lines.push('if PROXY:');
+                    lines.push('    session.proxies = {"http": PROXY, "https": PROXY}');
+                }
+                lines.push('');
+            }
+
+            if (opts.retry) {
+                if (C) lines.push('# Retry helper with exponential backoff');
+                lines.push('def _retry_request(fn' + (T ? ': Any' : '') + ', retries' + (T ? ': int' : '') + '=3, backoff' + (T ? ': float' : '') + '=1.0)' + (T ? ' -> Any' : '') + ':');
+                lines.push('    for attempt in range(retries):');
+                lines.push('        try:');
+                lines.push('            return fn()');
+                lines.push('        except Exception as e:');
+                lines.push('            if attempt == retries - 1:');
+                lines.push('                raise');
+                lines.push('            time.sleep(backoff * (2 ** attempt))');
+                lines.push('');
+            }
+
+            // Per-request functions
+            sel.forEach((e, selIdx) => {
+                const req = e.entry.request;
+                const url = req.url;
+                const method = req.method;
+                const fnName = makeFnName(method, url, e.id);
+
+                // Tokens this function needs as parameters
+                const neededTokIds = consumers.get(selIdx) || new Set();
+                const neededToks = [...neededTokIds].map(id => tokById[id]).filter(Boolean);
+
+                // Build param string
+                const params = [];
+                if (!opts.session) params.push('session' + (T ? ': tls_client.Session' : ''));
+                neededToks.forEach(tok => {
+                    params.push(tok.id + (T ? ': str' : ''));
+                });
+
+                const headersObj = {};
+                const cookiesObj = {};
+                const tokenizedHeaders = new Set(); // header names replaced by token var
+                const tokenizedCookies = new Set();
+
+                if (opts.headers && req.headers) {
+                    req.headers.forEach(h => {
+                        if (h.name.startsWith(':')) return;
+                        if (['content-length', 'transfer-encoding', 'connection'].includes(h.name.toLowerCase())) return;
+                        // Check if this header value is a known token
+                        const tok = neededToks.find(t => h.value && h.value.includes(t.value));
+                        if (tok) {
+                            // Replace literal value with variable reference
+                            headersObj[h.name] = '__TOKEN__' + tok.id;
+                            tokenizedHeaders.add(h.name);
+                        } else {
+                            headersObj[h.name] = h.value;
+                        }
+                    });
+                }
+
+                if (opts.cookies && req.cookies && req.cookies.length) {
+                    req.cookies.forEach(c => {
+                        const tok = neededToks.find(t => c.value && c.value.includes(t.value));
+                        if (tok) {
+                            cookiesObj[c.name] = '__TOKEN__' + tok.id;
+                            tokenizedCookies.add(c.name);
+                        } else {
+                            cookiesObj[c.name] = c.value;
+                        }
+                    });
+                }
+
+                const hasBody = req.postData && req.postData.text;
+                const contentType = (headersObj['content-type'] || headersObj['Content-Type'] || '').toLowerCase();
+                const isJson = contentType.includes('application/json');
+                const isForm = contentType.includes('application/x-www-form-urlencoded');
+
+                if (C) lines.push('# Request ' + (selIdx + 1) + ': ' + method + ' ' + truncUrl(url));
+                lines.push('def ' + fnName + '(' + params.join(', ') + ')' + (T ? ' -> tls_client.response.Response' : '') + ':');
+
+                if (neededToks.length && C) {
+                    lines.push('    # Auto-extracted token dependencies: ' + neededToks.map(t => t.id + ' (' + t.kind + ')').join(', '));
+                }
+
+                lines.push('    url = ' + pyStr(url));
+                lines.push('');
+
+                // Headers — emit token vars inline
+                if (Object.keys(headersObj).length) {
+                    lines.push('    headers' + (T ? ': Dict[str, str]' : '') + ' = {');
+                    Object.entries(headersObj).forEach(([k, v]) => {
+                        if (typeof v === 'string' && v.startsWith('__TOKEN__')) {
+                            const tokId = v.slice(9);
+                            const tok = tokById[tokId];
+                            // If the original header value is "Bearer <token>" style, reconstruct it
+                            const origVal = req.headers.find(h => h.name === k)?.value || '';
+                            const bearerMatch = origVal.match(/^(Bearer |Basic |Token )/i);
+                            const prefix = bearerMatch ? bearerMatch[1] : '';
+                            const pyVal = prefix ? 'f"' + prefix + '{' + tokId + '}"' : tokId;
+                            lines.push('        ' + pyStr(k) + ': ' + pyVal + ',');
+                        } else {
+                            lines.push('        ' + pyStr(k) + ': ' + pyStr(v) + ',');
+                        }
+                    });
+                    lines.push('    }');
+                    lines.push('');
+                }
+
+                // Cookies
+                if (Object.keys(cookiesObj).length) {
+                    lines.push('    cookies' + (T ? ': Dict[str, str]' : '') + ' = {');
+                    Object.entries(cookiesObj).forEach(([k, v]) => {
+                        if (typeof v === 'string' && v.startsWith('__TOKEN__')) {
+                            const tokId = v.slice(9);
+                            lines.push('        ' + pyStr(k) + ': ' + tokId + ',');
+                        } else {
+                            lines.push('        ' + pyStr(k) + ': ' + pyStr(v) + ',');
+                        }
+                    });
+                    lines.push('    }');
+                    lines.push('');
+                }
+
+                // Body — replace token literals inside JSON body
+                let bodyVar = null;
+                if (hasBody) {
+                    if (isJson) {
+                        try {
+                            const parsed = JSON.parse(req.postData.text);
+                            // Replace token values inside parsed object
+                            const bodyTok = neededToks.find(t => req.postData.text.includes(t.value));
+                            if (bodyTok) {
+                                // Serialize and replace literal string
+                                let jsonStr = JSON.stringify(parsed, null, 4);
+                                jsonStr = jsonStr.replace(new RegExp(escapeRegex(bodyTok.value), 'g'), '" + ' + bodyTok.id + ' + "');
+                                lines.push('    json_data = ' + jsonStr.replace(/^/mg, '    ').trimStart());
+                            } else {
+                                lines.push('    json_data = ' + JSON.stringify(parsed, null, 4).replace(/^/mg, '    ').trimStart());
+                            }
+                            bodyVar = 'json';
+                        } catch {
+                            lines.push('    data = ' + pyStr(req.postData.text));
+                            bodyVar = 'data';
+                        }
+                    } else if (isForm) {
+                        lines.push('    data = ' + pyStr(req.postData.text));
+                        if (C) lines.push('    # URL-encoded form data');
+                        bodyVar = 'data';
+                    } else {
+                        lines.push('    data = ' + pyStr(req.postData.text));
+                        bodyVar = 'data';
+                    }
+                    lines.push('');
+                }
+
+                // Query params
+                const queryParams = req.queryString;
+                if (queryParams && queryParams.length) {
+                    lines.push('    params' + (T ? ': Dict[str, str]' : '') + ' = {');
+                    queryParams.forEach(p => {
+                        const tok = neededToks.find(t => p.value && p.value.includes(t.value));
+                        if (tok) {
+                            lines.push('        ' + pyStr(p.name) + ': ' + tok.id + ',');
+                        } else {
+                            lines.push('        ' + pyStr(p.name) + ': ' + pyStr(p.value) + ',');
+                        }
+                    });
+                    lines.push('    }');
+                    lines.push('');
+                }
+
+                const callArgs = ['url'];
+                if (Object.keys(headersObj).length) callArgs.push('headers=headers');
+                if (Object.keys(cookiesObj).length) callArgs.push('cookies=cookies');
+                if (queryParams && queryParams.length) callArgs.push('params=params');
+                if (bodyVar === 'json') callArgs.push('json=json_data');
+                else if (bodyVar) callArgs.push('data=data');
+                if (opts.timeout) callArgs.push('timeout_seconds=TIMEOUT');
+
+                if (opts.retry) {
+                    lines.push('    def _req():');
+                    lines.push('        return session.' + method.toLowerCase() + '(' + callArgs.join(', ') + ')');
+                    lines.push('    response = _retry_request(_req)');
+                } else {
+                    lines.push('    response = session.' + method.toLowerCase() + '(' + callArgs.join(', ') + ')');
+                }
+                lines.push('');
+                if (C) lines.push('    # Raise on 4xx/5xx');
+                lines.push('    response.raise_for_status()');
+                lines.push('    return response');
+                lines.push('');
+                lines.push('');
+            });
+
+            // Main block — chain calls and extract tokens between them
+            lines.push('if __name__ == "__main__":');
+            if (!opts.session) {
+                lines.push('    session = tls_client.Session(client_identifier="' + opts.tls + '", random_tls_extension_order=True)');
+                lines.push('');
+            }
+
+            // Track which tokens have been extracted so far in main
+            const extractedInMain = new Map(); // tokId -> python var name
+
+            sel.forEach((e, selIdx) => {
+                const fnName = makeFnName(e.entry.request.method, e.entry.request.url, e.id);
+                const neededTokIds = consumers.get(selIdx) || new Set();
+                const neededToks = [...neededTokIds].map(id => tokById[id]).filter(Boolean);
+
+                // Build call args for main
+                const callArgs = [];
+                neededToks.forEach(tok => {
+                    const varName = extractedInMain.get(tok.id);
+                    callArgs.push(tok.id + '=' + (varName || pyStr(tok.value)));
+                });
+
+                const callStr = callArgs.length
+                    ? fnName + '(' + callArgs.join(', ') + ')'
+                    : fnName + '()';
+
+                lines.push('    # ' + e.entry.request.method + ' ' + truncUrl(e.entry.request.url, 55));
+                lines.push('    resp_' + selIdx + ' = ' + callStr);
+                lines.push('    print(f"[' + e.entry.request.method + '] {resp_' + selIdx + '.status_code} — ' + truncUrl(e.entry.request.url, 45) + '")');
+
+                // After this call, check if it produces any tokens needed by later requests
+                const producedTokens = allTokens.filter(t => t.producerIdx === e.id);
+                producedTokens.forEach(tok => {
+                    // Only emit extraction if another selected request consumes it
+                    const isNeeded = [...consumers.values()].some(s => s.has(tok.id));
+                    if (isNeeded && !extractedInMain.has(tok.id)) {
+                        const varName = tok.kind + '_' + tok.id.replace('tok_', '');
+                        if (C) lines.push('    # Extract ' + tok.kind + ' from response');
+                        lines.push('    ' + varName + ' = ' + tok.extractCode.replace('response', 'resp_' + selIdx));
+                        extractedInMain.set(tok.id, varName);
+                    }
+                });
+                lines.push('');
+            });
+
+            return lines.join('\n');
+        }
+
+        // ──────────────────────────────────────────────
+        // Helpers
+        // ──────────────────────────────────────────────
+        function makeFnName(method, url, idx) {
+            try {
+                const u = new URL(url);
+                const path = u.pathname.replace(/\/$/, '').split('/').filter(Boolean).slice(-2).join('_');
+                const slug = path.replace(/[^a-z0-9_]/gi, '_').replace(/_+/g, '_').slice(0, 30);
+                return method.toLowerCase() + '_' + (slug || 'request');
+            } catch {
+                return 'request_' + idx;
+            }
+        }
+
+        function truncUrl(url, max) {
+            max = max || 70;
+            try {
+                const u = new URL(url);
+                const s = u.hostname + u.pathname;
+                return s.length > max ? s.slice(0, max) + '\u2026' : s;
+            } catch { return url.slice(0, max); }
+        }
+
+        function pyStr(s) {
+            if (typeof s !== 'string') s = String(s);
+            const escaped = s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+            return '"' + escaped + '"';
+        }
+
+        function escapeRegex(s) {
+            return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        function escHtml(s) {
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // ──────────────────────────────────────────────
+        // Syntax highlighting (tokenizer)
+        // ──────────────────────────────────────────────
+        function highlight(code) {
+            const KEYWORDS = new Set(['import', 'from', 'def', 'return', 'if', 'else', 'elif', 'for', 'in',
+                'not', 'and', 'or', 'True', 'False', 'None', 'class', 'try', 'except', 'raise', 'with', 'as',
+                'pass', 'lambda', 'yield', 'while', 'break', 'continue', 'global', 'nonlocal', 'del', 'assert']);
+
+            const TOKEN = /(#[^\n]*)|("""[\s\S]*?"""|'''[\s\S]*?'''|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|([A-Za-z_]\w*)|(\d+\.?\d*)|([^\w\s])/g;
+
+            let out = '', last = 0, m;
+            while ((m = TOKEN.exec(code)) !== null) {
+                if (m.index > last) out += esc(code.slice(last, m.index));
+                last = TOKEN.lastIndex;
+                const [full, comment, str, ident, num] = m;
+                if (comment) {
+                    out += '<span class="cm">' + esc(comment) + '</span>';
+                } else if (str) {
+                    out += '<span class="str">' + esc(str) + '</span>';
+                } else if (ident) {
+                    if (KEYWORDS.has(ident)) {
+                        out += '<span class="kw">' + esc(ident) + '</span>';
+                    } else if (ident[0] === ident[0].toUpperCase() && ident[0] !== ident[0].toLowerCase()) {
+                        out += '<span class="bi">' + esc(ident) + '</span>';
+                    } else {
+                        const rest = code.slice(TOKEN.lastIndex).trimStart();
+                        out += rest[0] === '('
+                            ? '<span class="fn">' + esc(ident) + '</span>'
+                            : esc(ident);
+                    }
+                } else if (num) {
+                    out += '<span class="nm">' + esc(num) + '</span>';
+                } else {
+                    out += esc(full);
+                }
+            }
+            if (last < code.length) out += esc(code.slice(last));
+            return out;
+        }
+
+        function esc(s) {
+            return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function showCode(code) {
+            document.getElementById('code-placeholder').style.display = 'none';
+            const pre = document.getElementById('code-output');
+            pre.style.display = '';
+            pre.innerHTML = highlight(code);
+            document.getElementById('btn-copy').style.display = '';
+            document.getElementById('btn-download').style.display = '';
+        }
+
+        function hideOutput() {
+            document.getElementById('code-placeholder').style.display = '';
+            document.getElementById('code-output').style.display = 'none';
+            document.getElementById('btn-copy').style.display = 'none';
+            document.getElementById('btn-download').style.display = 'none';
+            generatedCode = '';
+            document.getElementById('stats-placeholder').style.display = '';
+            document.getElementById('stats-content').style.display = 'none';
+            document.getElementById('stats-content').innerHTML = '';
+            document.getElementById('schema-placeholder').style.display = '';
+            document.getElementById('schema-content').style.display = 'none';
+            document.getElementById('schema-content').innerHTML = '';
+        }
+
+        function copyCode() {
+            if (!generatedCode) return;
+            navigator.clipboard.writeText(generatedCode).then(() => showToast('Copied to clipboard'));
+        }
+
+        function downloadCode() {
+            if (!generatedCode) return;
+            const blob = new Blob([generatedCode], { type: 'text/plain' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'har_requests.py';
+            a.click();
+            URL.revokeObjectURL(a.href);
+            showToast('Downloaded har_requests.py');
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2500);
+        }
+
+        // ──────────────────────────────────────────────
+        // Tab switching
+        // ──────────────────────────────────────────────
+        function switchTab(name) {
+            ['script', 'stats', 'schema'].forEach(t => {
+                document.getElementById('tab-' + t).classList.toggle('active', t === name);
+                document.getElementById('pane-' + t).style.display = t === name ? '' : 'none';
+            });
+            const hasCode = generatedCode.length > 0;
+            document.getElementById('btn-copy').style.display = (name === 'script' && hasCode) ? '' : 'none';
+            document.getElementById('btn-download').style.display = (name === 'script' && hasCode) ? '' : 'none';
+        }
+
+        // ──────────────────────────────────────────────
+        // Stats panel
+        // ──────────────────────────────────────────────
+        function buildStats(sel, opts) {
+            const ph = document.getElementById('stats-placeholder');
+            const ct = document.getElementById('stats-content');
+
+            const methodCount = {};
+            const statusBuckets = { '2xx': 0, '3xx': 0, '4xx': 0, '5xx': 0, 'other': 0 };
+            const hostCount = {};
+            const fnNames = [];
+            let totalHeaders = 0, totalCookies = 0, withBody = 0;
+
+            sel.forEach((e, idx) => {
+                const req = e.entry.request;
+                const m = req.method || 'OTHER';
+                methodCount[m] = (methodCount[m] || 0) + 1;
+                const s = e.entry.response.status;
+                if (s >= 200 && s < 300) statusBuckets['2xx']++;
+                else if (s >= 300 && s < 400) statusBuckets['3xx']++;
+                else if (s >= 400 && s < 500) statusBuckets['4xx']++;
+                else if (s >= 500) statusBuckets['5xx']++;
+                else statusBuckets['other']++;
+                try { const u = new URL(req.url); hostCount[u.hostname] = (hostCount[u.hostname] || 0) + 1; } catch { }
+                totalHeaders += (req.headers || []).filter(h => !h.name.startsWith(':') && !['content-length', 'connection', 'transfer-encoding'].includes(h.name.toLowerCase())).length;
+                totalCookies += (req.cookies || []).length;
+                if (req.postData && req.postData.text) withBody++;
+                fnNames.push({
+                    name: makeFnName(m, req.url, e.id), method: m, url: req.url,
+                    argCount: [opts.headers, opts.cookies, req.queryString && req.queryString.length > 0, req.postData && req.postData.text].filter(Boolean).length
+                });
+            });
+
+            const lines = generatedCode.split('\n').length;
+            const hosts = Object.entries(hostCount).sort((a, b) => b[1] - a[1]);
+            const methodMax = Math.max(...Object.values(methodCount), 1);
+            const statusMax = Math.max(...Object.values(statusBuckets), 1);
+            const METHOD_COLORS = { GET: '#22d3a0', POST: '#4f8cff', PUT: '#f59e0b', DELETE: '#f87171', PATCH: '#a78bfa', HEAD: '#67e8f9', OPTIONS: '#8b95b0' };
+            const STATUS_COLORS = { '2xx': '#22d3a0', '3xx': '#f59e0b', '4xx': '#f87171', '5xx': '#f87171', 'other': '#4d5570' };
+
+            let html = '<div class="stats-grid">'
+                + '<div class="stat-card"><div class="val blue">' + sel.length + '</div><div class="lbl">Requests</div></div>'
+                + '<div class="stat-card"><div class="val green">' + lines + '</div><div class="lbl">Lines of code</div></div>'
+                + '<div class="stat-card"><div class="val amber">' + hosts.length + '</div><div class="lbl">Hosts</div></div>'
+                + '<div class="stat-card"><div class="val">' + totalHeaders + '</div><div class="lbl">Total headers</div></div>'
+                + '<div class="stat-card"><div class="val">' + totalCookies + '</div><div class="lbl">Total cookies</div></div>'
+                + '<div class="stat-card"><div class="val">' + withBody + '</div><div class="lbl">With body</div></div>'
+                + '</div>';
+
+            html += '<div class="stats-section"><div class="stats-section-title">HTTP Methods</div>';
+            Object.entries(methodCount).sort((a, b) => b[1] - a[1]).forEach(([m, n]) => {
+                const col = METHOD_COLORS[m] || '#8b95b0';
+                html += '<div class="bar-row"><span class="bar-label" style="color:' + col + '">' + escHtml(m) + '</span><div class="bar-track"><div class="bar-fill" style="width:' + Math.round(n / methodMax * 100) + '%;background:' + col + '"></div></div><span class="bar-count">' + n + '</span></div>';
+            });
+            html += '</div>';
+
+            html += '<div class="stats-section"><div class="stats-section-title">Response Status</div>';
+            Object.entries(statusBuckets).filter(([, n]) => n > 0).forEach(([s, n]) => {
+                const col = STATUS_COLORS[s];
+                html += '<div class="bar-row"><span class="bar-label" style="color:' + col + '">' + s + '</span><div class="bar-track"><div class="bar-fill" style="width:' + Math.round(n / statusMax * 100) + '%;background:' + col + '"></div></div><span class="bar-count">' + n + '</span></div>';
+            });
+            html += '</div>';
+
+            html += '<div class="stats-section"><div class="stats-section-title">Hosts (' + hosts.length + ')</div>';
+            hosts.forEach(([h, n]) => {
+                html += '<div class="host-row"><span class="host-name">' + escHtml(h) + '</span><span class="host-count-badge">' + n + ' req' + (n > 1 ? 's' : '') + '</span></div>';
+            });
+            html += '</div>';
+
+            const mbg = { GET: 'rgba(34,211,160,.12)', POST: 'rgba(79,140,255,.12)', PUT: 'rgba(245,158,11,.12)', DELETE: 'rgba(248,113,113,.12)', PATCH: 'rgba(167,139,250,.12)', other: 'rgba(75,85,110,.15)' };
+            const mfg = { GET: '#22d3a0', POST: '#4f8cff', PUT: '#f59e0b', DELETE: '#f87171', PATCH: '#a78bfa', other: '#8b95b0' };
+
+            html += '<div class="stats-section"><div class="stats-section-title">Generated functions (' + fnNames.length + ')</div>';
+            fnNames.forEach((f, i) => {
+                const mc = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].includes(f.method) ? f.method : 'other';
+                html += '<div class="fn-row"><span class="fn-idx">' + String(i + 1).padStart(2, '0') + '</span>'
+                    + '<span class="fn-method" style="background:' + (mbg[mc] || mbg.other) + ';color:' + (mfg[mc] || mfg.other) + '">' + escHtml(f.method) + '</span>'
+                    + '<span class="fn-name">' + escHtml(f.name) + '()</span>'
+                    + '<span class="fn-args">' + f.argCount + ' arg' + (f.argCount !== 1 ? 's' : '') + '</span></div>';
+            });
+            html += '</div>';
+
+            ct.innerHTML = html;
+            ph.style.display = 'none';
+            ct.style.display = '';
+        }
+
+        // ──────────────────────────────────────────────
+        // Schema Visualizer (with tokens + search)
+        // ──────────────────────────────────────────────
+        function buildSchema(sel, allTokens, consumers) {
+            const ph = document.getElementById('schema-placeholder');
+            const ct = document.getElementById('schema-content');
+
+            // ── Layout constants ──
+            const REQ_W = 148, REQ_H = 32, HOST_H = 36;
+            const TOK_W = 130, TOK_H = 28;
+            const COL_GAP = 56, ROW_GAP = 8, PATH_H = 18;
+            const TOK_COL_X_OFFSET = REQ_W + COL_GAP; // tokens drawn to the right of requests
+            const PAD = 18;
+            const BADGE_W = 44, BADGE_H = 17;
+            const METHOD_COLOR = { GET: '#22d3a0', POST: '#4f8cff', PUT: '#f59e0b', DELETE: '#f87171', PATCH: '#a78bfa', HEAD: '#67e8f9', OPTIONS: '#8b95b0' };
+            const KIND_COLOR = { access_token: '#a78bfa', refresh_token: '#f59e0b', id_token: '#f0abfc', token: '#a78bfa', api_key: '#f87171', session_token: '#67e8f9', session_id: '#67e8f9', csrf: '#fb923c', cookie: '#22d3a0', jwt: '#a78bfa', x_auth_token: '#4f8cff', authorization: '#4f8cff', user_id: '#8b95b0' };
+
+            // ── Group requests by host ──
+            const tree = {};
+            sel.forEach((e, selIdx) => {
+                const req = e.entry.request;
+                let host, pathname;
+                try { const u = new URL(req.url); host = u.hostname; pathname = u.pathname; }
+                catch { host = 'unknown'; pathname = '/'; }
+                if (!tree[host]) tree[host] = {};
+                const seg = pathname.replace(/\/$/, '') || '/';
+                if (!tree[host][seg]) tree[host][seg] = [];
+                tree[host][seg].push({
+                    method: req.method, status: e.entry.response.status, url: req.url,
+                    selIdx, globalIdx: e.id,
+                    hasCookies: (req.cookies || []).length > 0,
+                    hasBody: !!(req.postData && req.postData.text),
+                    headerCount: (req.headers || []).filter(h => !h.name.startsWith(':')).length,
+                });
+            });
+
+            // ── Compute which tokens are in play (produced or consumed by selected reqs) ──
+            const selGlobalIdxSet = new Set(sel.map(e => e.id));
+            const relevantTokens = allTokens.filter(tok => {
+                if (selGlobalIdxSet.has(tok.producerIdx)) return true;
+                return [...(consumers.values())].some(s => s.has(tok.id));
+            });
+            const tokById = Object.fromEntries(allTokens.map(t => [t.id, t]));
+
+            // ── Layout: one column per host, tokens in a second column block ──
+            const hosts = Object.keys(tree);
+            const COLS = Math.min(2, hosts.length); // max 2 host columns
+            const hostColW = REQ_W + COL_GAP;
+            const tokColX = PAD + COLS * hostColW + 10; // tokens column starts here
+
+            // Measure host column heights
+            const colHeights = Array(COLS).fill(PAD);
+
+            const hostPositions = hosts.map((host, i) => {
+                const col = i % COLS;
+                const x = PAD + col * hostColW;
+                const y = colHeights[col];
+                const paths = Object.keys(tree[host]).sort();
+                let h = HOST_H + 8;
+                paths.forEach(p => { h += PATH_H + tree[host][p].length * (REQ_H + ROW_GAP); });
+                h += 12;
+                colHeights[col] += h + 20;
+                return { host, paths, x, y };
+            });
+
+            // Token vertical positions (stacked in their own column)
+            let tokY = PAD;
+            const tokenPositions = relevantTokens.map(tok => {
+                const y = tokY;
+                tokY += TOK_H + ROW_GAP + 2;
+                return { tok, x: tokColX, y };
+            });
+
+            // Map: globalIdx -> { cx, cy } centre of the request node in SVG
+            const reqCentre = {};
+
+            const svgW = tokColX + (relevantTokens.length ? TOK_W + PAD : 0);
+            const svgH = Math.max(Math.max(...colHeights) + PAD, tokY + PAD);
+
+            const usedMethods = [...new Set(sel.map(e => e.entry.request.method))];
+            let tooltipData = {};
+            let parts = [];
+
+            // ── Draw request nodes ──
+            hostPositions.forEach(pos => {
+                const { host, paths, x } = pos;
+                let y = pos.y;
+
+                const shortHost = host.length > 20 ? host.slice(0, 18) + '\u2026' : host;
+                parts.push(
+                    '<rect x="' + x + '" y="' + y + '" width="' + REQ_W + '" height="' + HOST_H + '" rx="7"'
+                    + ' fill="rgba(79,140,255,0.1)" stroke="rgba(79,140,255,0.35)" stroke-width="1"/>'
+                    + '<text x="' + (x + REQ_W / 2) + '" y="' + (y + HOST_H / 2) + '" text-anchor="middle" dominant-baseline="central"'
+                    + ' font-family="JetBrains Mono,monospace" font-size="10" font-weight="500" fill="#4f8cff"'
+                    + ' style="pointer-events:none">' + escSvg(shortHost) + '</text>'
+                );
+                y += HOST_H + 8;
+
+                paths.forEach(pathname => {
+                    const reqs = tree[host][pathname];
+                    const shortPath = pathname.length > 22 ? '\u2026' + pathname.slice(-20) : pathname;
+                    parts.push('<text x="' + (x + 4) + '" y="' + (y + 11) + '" font-family="JetBrains Mono,monospace" font-size="9"'
+                        + ' fill="rgba(139,149,176,0.55)" style="pointer-events:none">' + escSvg(shortPath) + '</text>');
+                    y += PATH_H;
+
+                    reqs.forEach(r => {
+                        const col = METHOD_COLOR[r.method] || '#8b95b0';
+                        const nodeId = 'rn_' + r.globalIdx;
+                        tooltipData[nodeId] = r;
+                        // Store centre for edge drawing
+                        reqCentre[r.globalIdx] = { cx: x + REQ_W, cy: y + REQ_H / 2 };
+
+                        const endSeg = pathname.split('/').filter(Boolean).slice(-1)[0] || '/';
+                        const label = endSeg.length > 12 ? endSeg.slice(0, 11) + '\u2026' : endSeg;
+                        const sdot = r.status >= 500 ? '#f87171' : r.status >= 400 ? '#f87171' : r.status >= 300 ? '#f59e0b' : '#22d3a0';
+
+                        parts.push(
+                            '<g class="schema-node" id="' + nodeId + '"'
+                            + ' onmouseenter="showSchemaTooltip(event,\'' + nodeId + '\')" onmouseleave="hideSchemaTooltip()">'
+                            + '<rect x="' + x + '" y="' + y + '" width="' + REQ_W + '" height="' + REQ_H + '" rx="5"'
+                            + ' fill="rgba(20,23,32,0.95)" stroke="' + col + '" stroke-width="0.75" stroke-opacity="0.5"/>'
+                            + '<rect x="' + (x + 4) + '" y="' + (y + (REQ_H - BADGE_H) / 2) + '" width="' + BADGE_W + '" height="' + BADGE_H + '" rx="3"'
+                            + ' fill="' + col + '" fill-opacity="0.15"/>'
+                            + '<text x="' + (x + 4 + BADGE_W / 2) + '" y="' + (y + REQ_H / 2) + '" text-anchor="middle" dominant-baseline="central"'
+                            + ' font-family="JetBrains Mono,monospace" font-size="9" font-weight="500" fill="' + col + '"'
+                            + ' style="pointer-events:none">' + escSvg(r.method) + '</text>'
+                            + '<text x="' + (x + BADGE_W + 10) + '" y="' + (y + REQ_H / 2) + '" dominant-baseline="central"'
+                            + ' font-family="JetBrains Mono,monospace" font-size="9" fill="rgba(232,236,244,0.65)"'
+                            + ' style="pointer-events:none">' + escSvg(label) + '</text>'
+                            + '<circle cx="' + (x + REQ_W - 8) + '" cy="' + (y + REQ_H / 2) + '" r="3" fill="' + sdot + '" fill-opacity="0.85"/>'
+                            + '</g>'
+                        );
+                        y += REQ_H + ROW_GAP;
+                    });
+                });
+            });
+
+            // ── Draw token nodes ──
+            tokenPositions.forEach(({ tok, x, y }) => {
+                const col = KIND_COLOR[tok.kind] || '#8b95b0';
+                const tokNodeId = 'tn_' + tok.id;
+                tooltipData[tokNodeId] = { _isTok: true, tok };
+                const label = tok.name.length > 14 ? tok.name.slice(0, 13) + '\u2026' : tok.name;
+                const kindLabel = tok.kind.replace(/_/g, ' ');
+
+                parts.push(
+                    '<g class="schema-node" id="' + tokNodeId + '"'
+                    + ' onmouseenter="showSchemaTooltip(event,\'' + tokNodeId + '\')" onmouseleave="hideSchemaTooltip()">'
+                    // diamond / token shape
+                    + '<rect x="' + x + '" y="' + y + '" width="' + TOK_W + '" height="' + TOK_H + '" rx="5"'
+                    + ' fill="rgba(20,23,32,0.95)" stroke="' + col + '" stroke-width="1" stroke-opacity="0.6"'
+                    + ' stroke-dasharray="4 2"/>'
+                    // key icon area
+                    + '<rect x="' + (x + 4) + '" y="' + (y + (TOK_H - 17) / 2) + '" width="17" height="17" rx="3"'
+                    + ' fill="' + col + '" fill-opacity="0.15"/>'
+                    + '<text x="' + (x + 26) + '" y="' + (y + TOK_H / 2 - 4) + '" dominant-baseline="auto"'
+                    + ' font-family="JetBrains Mono,monospace" font-size="10" font-weight="500" fill="' + col + '"'
+                    + ' style="pointer-events:none">' + escSvg(label) + '</text>'
+                    + '<text x="' + (x + 26) + '" y="' + (y + TOK_H / 2 + 6) + '" dominant-baseline="auto"'
+                    + ' font-family="JetBrains Mono,monospace" font-size="8" fill="rgba(139,149,176,0.6)"'
+                    + ' style="pointer-events:none">' + escSvg(kindLabel) + '</text>'
+                    + '</g>'
+                );
+            });
+
+            // ── Draw edges: producer request -> token, token -> consumer requests ──
+            // We draw these first (behind nodes) — insert at beginning of parts
+            const edges = [];
+
+            tokenPositions.forEach(({ tok, x: tx, y: ty }) => {
+                const tokMidY = ty + TOK_H / 2;
+
+                // Edge from producer request to token (right edge of req -> left edge of token)
+                const prod = reqCentre[tok.producerIdx];
+                if (prod) {
+                    const x1 = prod.cx, y1 = prod.cy;
+                    const x2 = tx, y2 = tokMidY;
+                    const mx = (x1 + x2) / 2;
+                    edges.push(
+                        '<path d="M' + x1 + ',' + y1 + ' C' + mx + ',' + y1 + ' ' + mx + ',' + y2 + ' ' + x2 + ',' + y2 + '"'
+                        + ' fill="none" stroke="rgba(167,139,250,0.35)" stroke-width="1" stroke-dasharray="5 3"'
+                        + ' marker-end="url(#earrow)"/>'
+                    );
+                }
+
+                // Edges from token to each consumer
+                sel.forEach((e, selIdx) => {
+                    const s = consumers.get(selIdx);
+                    if (!s || !s.has(tok.id)) return;
+                    const cons = reqCentre[e.id];
+                    if (!cons) return;
+                    const x1 = tx + TOK_W, y1 = tokMidY;
+                    const x2 = cons.cx - REQ_W, y2 = cons.cy;
+                    // Route back left — use a bezier that curves around
+                    const mx = x1 + 30;
+                    const tok_col = KIND_COLOR[tok.kind] || '#8b95b0';
+                    edges.push(
+                        '<path d="M' + x1 + ',' + y1 + ' C' + mx + ',' + y1 + ' ' + mx + ',' + y2 + ' ' + x2 + ',' + y2 + '"'
+                        + ' fill="none" stroke="' + tok_col.replace(')', ',0.3)').replace('rgb(', 'rgba(') + '" stroke-width="1.2"'
+                        + ' marker-end="url(#earrow)"/>'
+                    );
+                });
+            });
+
+            // ── Assemble SVG ──
+            const defs = '<defs>'
+                + '<marker id="earrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">'
+                + '<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>'
+                + '</marker>'
+                + '</defs>';
+
+            const svgTag = '<svg id="schema-svg" width="' + svgW + '" height="' + svgH + '"'
+                + ' viewBox="0 0 ' + svgW + ' ' + svgH + '" xmlns="http://www.w3.org/2000/svg" style="display:block">'
+                + defs
+                + edges.join('')     // edges behind nodes
+                + parts.join('')     // nodes on top
+                + '</svg>';
+
+            // ── Legend ──
+            let legend = '<div class="schema-legend">';
+            usedMethods.forEach(m => {
+                legend += '<span class="legend-item"><span class="legend-dot" style="background:' + (METHOD_COLOR[m] || '#8b95b0') + '"></span>' + escHtml(m) + '</span>';
+            });
+            if (relevantTokens.length) {
+                legend += '<span class="legend-item" style="border-left:1px solid rgba(255,255,255,0.1);padding-left:12px;margin-left:4px">'
+                    + '<span class="legend-dot" style="background:#a78bfa;border:1px dashed #a78bfa;background:transparent"></span>token</span>';
+            }
+            legend += '<span class="legend-item" style="margin-left:auto"><span class="legend-dot" style="background:#22d3a0"></span>2xx</span>'
+                + '<span class="legend-item"><span class="legend-dot" style="background:#f59e0b"></span>3xx</span>'
+                + '<span class="legend-item"><span class="legend-dot" style="background:#f87171"></span>4xx+</span>'
+                + '</div>';
+
+            // ── Search bar ──
+            const searchBar = '<div class="schema-search-row">'
+                + '<input type="text" id="schema-search" placeholder="Search requests or tokens\u2026" oninput="filterSchema(this.value)">'
+                + '<span id="schema-search-count" class="schema-search-count"></span>'
+                + '</div>';
+
+            ct.innerHTML = searchBar + legend + '<div class="schema-canvas-wrap">' + svgTag + '</div>';
+            ct._tooltipData = tooltipData;
+            ct._allTokens = allTokens;
+            ct._consumers = consumers;
+            ph.style.display = 'none';
+            ct.style.display = '';
+        }
+
+        function filterSchema(q) {
+            const lq = q.toLowerCase().trim();
+            const ct = document.getElementById('schema-content');
+            const td = ct._tooltipData || {};
+            let matched = 0, total = 0;
+
+            Object.entries(td).forEach(([id, data]) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                total++;
+                let visible = true;
+                if (lq) {
+                    if (data._isTok) {
+                        visible = data.tok.kind.toLowerCase().includes(lq)
+                            || data.tok.name.toLowerCase().includes(lq)
+                            || data.tok.id.toLowerCase().includes(lq);
+                    } else {
+                        visible = data.url.toLowerCase().includes(lq)
+                            || data.method.toLowerCase().includes(lq);
+                    }
+                }
+                el.style.opacity = visible ? '1' : '0.12';
+                if (visible) matched++;
+            });
+
+            const countEl = document.getElementById('schema-search-count');
+            if (countEl) countEl.textContent = lq ? matched + ' / ' + total : '';
+        }
+
+        function escSvg(s) {
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function showSchemaTooltip(evt, nodeId) {
+            const ct = document.getElementById('schema-content');
+            const data = ct._tooltipData && ct._tooltipData[nodeId];
+            if (!data) return;
+            const tt = document.getElementById('schema-tooltip');
+            const METHOD_COL = { GET: '#22d3a0', POST: '#4f8cff', PUT: '#f59e0b', DELETE: '#f87171', PATCH: '#a78bfa' };
+            const KIND_COL = { access_token: '#a78bfa', refresh_token: '#f59e0b', token: '#a78bfa', api_key: '#f87171', cookie: '#22d3a0', csrf: '#fb923c', session_id: '#67e8f9', jwt: '#a78bfa' };
+
+            if (data._isTok) {
+                const tok = data.tok;
+                const col = KIND_COL[tok.kind] || '#8b95b0';
+                const preview = tok.value.length > 40 ? tok.value.slice(0, 38) + '\u2026' : tok.value;
+                tt.innerHTML = '<div class="tt-method" style="color:' + col + '">' + escHtml(tok.kind.replace(/_/g, ' ')) + '</div>'
+                    + '<div class="tt-url">' + escHtml(tok.name) + '</div>'
+                    + '<div class="tt-row"><span>source</span><span class="tt-val">' + escHtml(tok.source) + '</span></div>'
+                    + '<div class="tt-row"><span>jwt</span><span class="tt-val" style="color:' + (tok.isJwt ? '#a78bfa' : '#4d5570') + '">' + (tok.isJwt ? 'yes' : 'no') + '</span></div>'
+                    + '<div class="tt-row"><span>value</span><span class="tt-val" style="font-size:10px;word-break:break-all">' + escHtml(preview) + '</span></div>'
+                    + '<div class="tt-row"><span>extract</span><span class="tt-val" style="font-size:10px;color:#22d3a0">' + escHtml(tok.extractCode) + '</span></div>';
+            } else {
+                const mc = METHOD_COL[data.method] || '#8b95b0';
+                const sc = data.status >= 400 ? '#f87171' : data.status >= 300 ? '#f59e0b' : '#22d3a0';
+                tt.innerHTML = '<div class="tt-method" style="color:' + mc + '">' + escHtml(data.method) + '</div>'
+                    + '<div class="tt-url">' + escHtml(data.url.length > 80 ? data.url.slice(0, 78) + '\u2026' : data.url) + '</div>'
+                    + '<div class="tt-row"><span>status</span><span class="tt-val" style="color:' + sc + '">' + (data.status || '–') + '</span></div>'
+                    + '<div class="tt-row"><span>headers</span><span class="tt-val">' + data.headerCount + '</span></div>'
+                    + '<div class="tt-row"><span>cookies</span><span class="tt-val">' + (data.hasCookies ? 'yes' : 'no') + '</span></div>'
+                    + '<div class="tt-row"><span>body</span><span class="tt-val">' + (data.hasBody ? 'yes' : 'no') + '</span></div>';
+            }
+            tt.style.display = 'block';
+            positionTooltip(evt, tt);
+        }
+
+        function hideSchemaTooltip() {
+            document.getElementById('schema-tooltip').style.display = 'none';
+        }
+
+        function positionTooltip(evt, tt) {
+            const pad = 14;
+            tt.style.left = (evt.clientX + pad) + 'px';
+            tt.style.top = (evt.clientY + pad) + 'px';
+            requestAnimationFrame(function () {
+                const r = tt.getBoundingClientRect();
+                const bw = document.documentElement.clientWidth;
+                const bh = document.documentElement.clientHeight;
+                if (r.right > bw - 8) tt.style.left = (evt.clientX - r.width - pad) + 'px';
+                if (r.bottom > bh - 8) tt.style.top = (evt.clientY - r.height - pad) + 'px';
+            });
+        }
+
+        // ──────────────────────────────────────────────
+        // Example HAR (with auth flow: login -> token -> authenticated request)
+        // ──────────────────────────────────────────────
+        function loadExample() {
+            const accessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyXzEyMyIsImV4cCI6MTcwMDAwMDAwMH0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+            const csrfToken = 'a1b2c3d4e5f6789012345678';
+            const sessionCookie = 'sess_9f8e7d6c5b4a3210fedcba98';
+
+            harData = {
+                log: {
+                    entries: [
+                        {
+                            request: {
+                                method: 'GET', url: 'https://api.example.com/v1/auth/csrf',
+                                headers: [
+                                    { name: 'User-Agent', value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+                                    { name: 'Accept', value: 'application/json' },
+                                ],
+                                cookies: [], queryString: [], postData: null,
+                            },
+                            response: {
+                                status: 200,
+                                headers: [
+                                    { name: 'content-type', value: 'application/json' },
+                                    { name: 'x-csrf-token', value: csrfToken },
+                                ],
+                                content: { mimeType: 'application/json', text: JSON.stringify({ csrf_token: csrfToken }) },
+                            },
+                        },
+                        {
+                            request: {
+                                method: 'POST', url: 'https://api.example.com/v1/auth/login',
+                                headers: [
+                                    { name: 'User-Agent', value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+                                    { name: 'Content-Type', value: 'application/json' },
+                                    { name: 'X-CSRF-Token', value: csrfToken },
+                                ],
+                                cookies: [], queryString: [],
+                                postData: { mimeType: 'application/json', text: JSON.stringify({ username: 'john_doe', password: 's3cr3t!', csrf: csrfToken }) },
+                            },
+                            response: {
+                                status: 200,
+                                headers: [
+                                    { name: 'content-type', value: 'application/json' },
+                                    { name: 'set-cookie', value: 'session=' + sessionCookie + '; Path=/; HttpOnly; Secure' },
+                                ],
+                                content: { mimeType: 'application/json', text: JSON.stringify({ access_token: accessToken, refresh_token: 'dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4K', user_id: 'user_123', expires_in: 3600 }) },
+                            },
+                        },
+                        {
+                            request: {
+                                method: 'GET', url: 'https://api.example.com/v1/users/me/profile',
+                                headers: [
+                                    { name: 'User-Agent', value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+                                    { name: 'Accept', value: 'application/json' },
+                                    { name: 'Authorization', value: 'Bearer ' + accessToken },
+                                    { name: 'X-CSRF-Token', value: csrfToken },
+                                ],
+                                cookies: [{ name: 'session', value: sessionCookie }],
+                                queryString: [], postData: null,
+                            },
+                            response: { status: 200, headers: [{ name: 'content-type', value: 'application/json' }], content: { mimeType: 'application/json', text: '{"id":"user_123","name":"John Doe"}' } },
+                        },
+                        {
+                            request: {
+                                method: 'PUT', url: 'https://api.example.com/v1/users/me/settings',
+                                headers: [
+                                    { name: 'User-Agent', value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+                                    { name: 'Content-Type', value: 'application/json' },
+                                    { name: 'Authorization', value: 'Bearer ' + accessToken },
+                                ],
+                                cookies: [{ name: 'session', value: sessionCookie }],
+                                queryString: [],
+                                postData: { mimeType: 'application/json', text: JSON.stringify({ theme: 'dark', notifications: true }) },
+                            },
+                            response: { status: 200, headers: [], content: { mimeType: 'application/json', text: '{"ok":true}' } },
+                        },
+                    ],
+                },
+            };
+            processHar('example_auth_flow.har');
+            showToast('Example loaded — click Generate');
+        }
+    </script>
+</body>
+
+</html>
