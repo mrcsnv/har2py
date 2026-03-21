@@ -30,7 +30,8 @@ The primary goal of Har2Py is to streamline the process of moving from manual se
 
 ## Credits
 
-- **tls-client library**: [https://github.com/bogdanfinn/tls-client](https://github.com/bogdanfinn/tls-client)
+- **Python-Tls-Client**: [https://github.com/FlorianREGAZ/Python-Tls-Client](https://github.com/FlorianREGAZ/Python-Tls-Client) - The Python port by **FlorianREGAZ** used in the generated scripts.
+- **tls-client (Golang)**: [https://github.com/bogdanfinn/tls-client](https://github.com/bogdanfinn/tls-client) - The original implementation by **bogdanfinn**.
 
 ## License
 
