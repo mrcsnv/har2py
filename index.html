@@ -1048,6 +1048,105 @@
             color: var(--text3);
         }
 
+        /* ── Modal ── */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(13, 15, 20, 0.95);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            backdrop-filter: blur(8px);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-container {
+            background: var(--bg2);
+            border: 1px solid var(--border2);
+            border-radius: var(--radius);
+            width: 100%;
+            height: 100%;
+            max-width: 1600px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg);
+        }
+
+        .modal-title {
+            font-family: var(--mono);
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: var(--text2);
+            cursor: pointer;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            border-radius: 4px;
+        }
+
+        .modal-close:hover {
+            background: var(--bg3);
+            color: var(--text);
+        }
+
+        .modal-body {
+            flex: 1;
+            overflow: auto;
+            padding: 24px;
+        }
+
+        .modal-body pre {
+            margin: 0;
+            font-size: 13px;
+        }
+
+        .btn-expand {
+            padding: 6px;
+            border-radius: 4px;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            color: var(--text2);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .btn-expand:hover {
+            background: var(--bg4);
+            color: var(--text);
+            border-color: var(--border2);
+        }
+
         .legend-dot {
             width: 10px;
             height: 10px;
@@ -1291,6 +1390,11 @@
 
             <!-- Script tab -->
             <div id="pane-script" class="tab-pane active">
+                <div style="display:flex; justify-content:flex-end; margin-bottom:8px;">
+                    <button class="btn-expand" onclick="openModal('script')" title="Expand view">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                    </button>
+                </div>
                 <div class="code-area" id="code-area">
                     <div class="code-placeholder" id="code-placeholder">
                         <p>Your Python script will appear here</p>
@@ -1311,6 +1415,11 @@
 
             <!-- Schema tab -->
             <div id="pane-schema" class="tab-pane" style="display:none">
+                <div style="display:flex; justify-content:flex-end; margin-bottom:8px;">
+                    <button class="btn-expand" onclick="openModal('schema')" title="Expand view">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                    </button>
+                </div>
                 <div class="stats-placeholder" id="schema-placeholder">
                     <p>Generate a script to see the schema</p>
                 </div>
@@ -1329,7 +1438,103 @@
     <div class="toast" id="toast"></div>
     <div class="schema-tooltip" id="schema-tooltip"></div>
 
+    <!-- Modal for expanded view -->
+    <div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-container" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <span class="modal-title" id="modal-title">Expanded View</span>
+                <button class="modal-close" onclick="closeModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Content injected here -->
+            </div>
+        </div>
+    </div>
+
     <script>
+        // ──────────────────────────────────────────────
+        // Modal logic
+        // ──────────────────────────────────────────────
+        function openModal(type) {
+            const overlay = document.getElementById('modal-overlay');
+            const title = document.getElementById('modal-title');
+            const body = document.getElementById('modal-body');
+            
+            if (type === 'script') {
+                title.textContent = 'Generated Python Script';
+                if (generatedCode) {
+                    body.innerHTML = `<pre style="white-space: pre; font-family: var(--mono); color: var(--text);">${highlight(generatedCode)}</pre>`;
+                } else {
+                    body.innerHTML = '<p style="color: var(--text3); text-align: center; margin-top: 40px;">No script generated yet.</p>';
+                }
+            } else if (type === 'schema') {
+                title.textContent = 'HAR Schema Visualizer';
+                const schemaContent = document.getElementById('schema-content');
+                if (schemaContent && schemaContent.innerHTML) {
+                    // Clone the content to avoid removing it from the main view
+                    body.innerHTML = schemaContent.innerHTML;
+                    // Fix SVG ID duplication issues if any, and ensure highlight functions work
+                    const svg = body.querySelector('svg');
+                    if (svg) {
+                        svg.id = 'schema-svg-modal';
+                        // Re-map event handlers for the modal SVG if needed
+                        const nodes = body.querySelectorAll('.schema-node');
+                        nodes.forEach(node => {
+                            const originalId = node.id;
+                            node.onmouseenter = () => highlightSchemaConnectionsModal(originalId);
+                            node.onmouseleave = () => resetSchemaHighlightModal();
+                        });
+                    }
+                } else {
+                    body.innerHTML = '<p style="color: var(--text3); text-align: center; margin-top: 40px;">No schema available. Generate a script first.</p>';
+                }
+            }
+            
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden'; // Prevent scroll
+        }
+
+        function closeModal() {
+            const overlay = document.getElementById('modal-overlay');
+            overlay.classList.remove('active');
+            document.body.style.overflow = '';
+            document.getElementById('modal-body').innerHTML = '';
+        }
+
+        // Modal-specific highlighting to avoid affecting the main view
+        function highlightSchemaConnectionsModal(nodeId) {
+            const svg = document.getElementById('schema-svg-modal');
+            if (!svg) return;
+            const nodes = svg.querySelectorAll('.schema-node');
+            const edges = svg.querySelectorAll('.schema-edge');
+            const relatedNodes = new Set([nodeId]);
+            const relatedEdges = new Set();
+            edges.forEach(edge => {
+                if (edge.getAttribute('data-from') === nodeId || edge.getAttribute('data-to') === nodeId) {
+                    relatedEdges.add(edge);
+                    relatedNodes.add(edge.getAttribute('data-from'));
+                    relatedNodes.add(edge.getAttribute('data-to'));
+                }
+            });
+            nodes.forEach(node => node.classList.toggle('schema-dimmed', !relatedNodes.has(node.id)));
+            edges.forEach(edge => {
+                edge.classList.toggle('schema-edge-dimmed', !relatedEdges.has(edge));
+                edge.classList.toggle('schema-highlight', relatedEdges.has(edge));
+            });
+        }
+
+        function resetSchemaHighlightModal() {
+            const svg = document.getElementById('schema-svg-modal');
+            if (!svg) return;
+            svg.querySelectorAll('.schema-node').forEach(n => n.classList.remove('schema-dimmed'));
+            svg.querySelectorAll('.schema-edge').forEach(e => {
+                e.classList.remove('schema-edge-dimmed');
+                e.classList.remove('schema-highlight');
+            });
+        }
+
         // ──────────────────────────────────────────────
         // State
         // ──────────────────────────────────────────────
