@@ -928,6 +928,36 @@
             max-height: calc(100vh - 300px);
             padding-bottom: 20px;
             padding-right: 4px;
+            position: relative;
+        }
+
+        .schema-node {
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .schema-edge {
+            transition: stroke-opacity 0.2s, stroke-width 0.2s;
+            pointer-events: none;
+            stroke-opacity: 0.25;
+        }
+
+        .schema-dimmed {
+            opacity: 0.1 !important;
+        }
+
+        .schema-edge-dimmed {
+            stroke-opacity: 0.05 !important;
+        }
+
+        .schema-highlight {
+            stroke-opacity: 0.9 !important;
+            stroke-width: 2 !important;
+            opacity: 1 !important;
+        }
+
+        .schema-node:hover {
+            opacity: 1 !important;
         }
 
         #schema-content::-webkit-scrollbar {
@@ -2254,9 +2284,9 @@
             // ── Layout constants ──
             const REQ_W = 148, REQ_H = 32, HOST_H = 36;
             const TOK_W = 130, TOK_H = 28;
-            const COL_GAP = 56, ROW_GAP = 8, PATH_H = 18;
+            const COL_GAP = 120, ROW_GAP = 12, PATH_H = 18;
             const TOK_COL_X_OFFSET = REQ_W + COL_GAP; // tokens drawn to the right of requests
-            const PAD = 18;
+            const PAD = 24;
             const BADGE_W = 44, BADGE_H = 17;
             const METHOD_COLOR = { GET: '#22d3a0', POST: '#4f8cff', PUT: '#f59e0b', DELETE: '#f87171', PATCH: '#a78bfa', HEAD: '#67e8f9', OPTIONS: '#8b95b0' };
             const KIND_COLOR = { access_token: '#a78bfa', refresh_token: '#f59e0b', id_token: '#f0abfc', token: '#a78bfa', api_key: '#f87171', session_token: '#67e8f9', session_id: '#67e8f9', csrf: '#fb923c', cookie: '#22d3a0', jwt: '#a78bfa', x_auth_token: '#4f8cff', authorization: '#4f8cff', user_id: '#8b95b0' };
@@ -2361,8 +2391,8 @@
                         const sdot = r.status >= 500 ? '#f87171' : r.status >= 400 ? '#f87171' : r.status >= 300 ? '#f59e0b' : '#22d3a0';
 
                         parts.push(
-                            '<g class="schema-node" id="' + nodeId + '"'
-                            + ' onmouseenter="showSchemaTooltip(event,\'' + nodeId + '\')" onmouseleave="hideSchemaTooltip()">'
+                            '<g class="schema-node" id="' + nodeId + '" data-id="' + r.globalIdx + '" data-type="req"'
+                            + ' onmouseenter="highlightSchemaConnections(\'' + nodeId + '\')" onmouseleave="resetSchemaHighlight()">'
                             + '<rect x="' + x + '" y="' + y + '" width="' + REQ_W + '" height="' + REQ_H + '" rx="5"'
                             + ' fill="rgba(20,23,32,0.95)" stroke="' + col + '" stroke-width="0.75" stroke-opacity="0.5"/>'
                             + '<rect x="' + (x + 4) + '" y="' + (y + (REQ_H - BADGE_H) / 2) + '" width="' + BADGE_W + '" height="' + BADGE_H + '" rx="3"'
@@ -2390,8 +2420,8 @@
                 const kindLabel = tok.kind.replace(/_/g, ' ');
 
                 parts.push(
-                    '<g class="schema-node" id="' + tokNodeId + '"'
-                    + ' onmouseenter="showSchemaTooltip(event,\'' + tokNodeId + '\')" onmouseleave="hideSchemaTooltip()">'
+                    '<g class="schema-node" id="' + tokNodeId + '" data-id="' + tok.id + '" data-type="tok"'
+                    + ' onmouseenter="highlightSchemaConnections(\'' + tokNodeId + '\')" onmouseleave="resetSchemaHighlight()">'
                     // diamond / token shape
                     + '<rect x="' + x + '" y="' + y + '" width="' + TOK_W + '" height="' + TOK_H + '" rx="5"'
                     + ' fill="rgba(20,23,32,0.95)" stroke="' + col + '" stroke-width="1" stroke-opacity="0.6"'
@@ -2409,40 +2439,37 @@
                 );
             });
 
-            // ── Draw edges: producer request -> token, token -> consumer requests ──
-            // We draw these first (behind nodes) — insert at beginning of parts
+            // ── Draw edges ──
             const edges = [];
-
             tokenPositions.forEach(({ tok, x: tx, y: ty }) => {
                 const tokMidY = ty + TOK_H / 2;
-
-                // Edge from producer request to token (right edge of req -> left edge of token)
                 const prod = reqCentre[tok.producerIdx];
                 if (prod) {
                     const x1 = prod.cx, y1 = prod.cy;
                     const x2 = tx, y2 = tokMidY;
                     const mx = (x1 + x2) / 2;
                     edges.push(
-                        '<path d="M' + x1 + ',' + y1 + ' C' + mx + ',' + y1 + ' ' + mx + ',' + y2 + ' ' + x2 + ',' + y2 + '"'
-                        + ' fill="none" stroke="rgba(167,139,250,0.35)" stroke-width="1" stroke-dasharray="5 3"'
+                        '<path class="schema-edge" d="M' + x1 + ',' + y1 + ' C' + mx + ',' + y1 + ' ' + mx + ',' + y2 + ' ' + x2 + ',' + y2 + '"'
+                        + ' data-from="rn_' + tok.producerIdx + '" data-to="tn_' + tok.id + '"'
+                        + ' fill="none" stroke="rgba(167,139,250,0.5)" stroke-width="1.2" stroke-dasharray="5 3"'
                         + ' marker-end="url(#earrow)"/>'
                     );
                 }
 
-                // Edges from token to each consumer
                 sel.forEach((e, selIdx) => {
                     const s = consumers.get(selIdx);
                     if (!s || !s.has(tok.id)) return;
                     const cons = reqCentre[e.id];
                     if (!cons) return;
-                    const x1 = tx + TOK_W, y1 = tokMidY;
-                    const x2 = cons.cx - REQ_W, y2 = cons.cy;
-                    // Route back left — use a bezier that curves around
-                    const mx = x1 + 30;
+                    // Start from LEFT of token, end at RIGHT of request
+                    const x1 = tx, y1 = tokMidY;
+                    const x2 = cons.cx, y2 = cons.cy;
+                    const mx = x1 + (x2 - x1) / 2;
                     const tok_col = KIND_COLOR[tok.kind] || '#8b95b0';
                     edges.push(
-                        '<path d="M' + x1 + ',' + y1 + ' C' + mx + ',' + y1 + ' ' + mx + ',' + y2 + ' ' + x2 + ',' + y2 + '"'
-                        + ' fill="none" stroke="' + tok_col.replace(')', ',0.3)').replace('rgb(', 'rgba(') + '" stroke-width="1.2"'
+                        '<path class="schema-edge" d="M' + x1 + ',' + y1 + ' C' + mx + ',' + y1 + ' ' + mx + ',' + y2 + ' ' + x2 + ',' + y2 + '"'
+                        + ' data-from="tn_' + tok.id + '" data-to="rn_' + e.id + '"'
+                        + ' fill="none" stroke="' + tok_col + '" stroke-width="1.2"'
                         + ' marker-end="url(#earrow)"/>'
                     );
                 });
@@ -2521,6 +2548,72 @@
 
         function escSvg(s) {
             return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function highlightSchemaConnections(nodeId) {
+            const svg = document.getElementById('schema-svg');
+            if (!svg) return;
+
+            // Highlight tooltip
+            const ct = document.getElementById('schema-content');
+            const tt = document.getElementById('schema-tooltip');
+            const data = ct._tooltipData && ct._tooltipData[nodeId];
+            if (data) {
+                // Mock an event for tooltip positioning
+                const node = document.getElementById(nodeId);
+                const rect = node.getBoundingClientRect();
+                showSchemaTooltip({ clientX: rect.right, clientY: rect.top }, nodeId);
+            }
+
+            const nodes = svg.querySelectorAll('.schema-node');
+            const edges = svg.querySelectorAll('.schema-edge');
+
+            const relatedNodes = new Set([nodeId]);
+            const relatedEdges = new Set();
+
+            edges.forEach(edge => {
+                const from = edge.getAttribute('data-from');
+                const to = edge.getAttribute('data-to');
+                if (from === nodeId || to === nodeId) {
+                    relatedEdges.add(edge);
+                    relatedNodes.add(from);
+                    relatedNodes.add(to);
+                }
+            });
+
+            nodes.forEach(node => {
+                if (!relatedNodes.has(node.id)) {
+                    node.classList.add('schema-dimmed');
+                } else {
+                    node.classList.remove('schema-dimmed');
+                }
+            });
+
+            edges.forEach(edge => {
+                if (!relatedEdges.has(edge)) {
+                    edge.classList.add('schema-edge-dimmed');
+                    edge.classList.remove('schema-highlight');
+                } else {
+                    edge.classList.remove('schema-edge-dimmed');
+                    edge.classList.add('schema-highlight');
+                }
+            });
+        }
+
+        function resetSchemaHighlight() {
+            const svg = document.getElementById('schema-svg');
+            if (!svg) return;
+
+            hideSchemaTooltip();
+
+            const nodes = svg.querySelectorAll('.schema-node');
+            const edges = svg.querySelectorAll('.schema-edge');
+
+            nodes.forEach(node => node.classList.remove('schema-dimmed'));
+            edges.forEach(edge => {
+                edge.classList.remove('schema-edge-dimmed');
+                edge.classList.remove('schema-highlight');
+            });
         }
 
         function showSchemaTooltip(evt, nodeId) {
