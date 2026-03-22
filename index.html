@@ -1743,7 +1743,7 @@
                 if (opts.headers && req.headers) {
                     req.headers.forEach(h => {
                         if (h.name.startsWith(':')) return;
-                        if (['content-length', 'transfer-encoding', 'connection'].includes(h.name.toLowerCase())) return;
+                        if (['content-length', 'transfer-encoding', 'connection', 'cookie'].includes(h.name.toLowerCase())) return;
                         // Check if this header value is a known token
                         const tok = neededToks.find(t => h.value && h.value.includes(t.value));
                         if (tok) {
