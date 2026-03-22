@@ -1502,7 +1502,22 @@
          */
         function extractTokens(allEntries) {
             const tokens = [];
-            let tid = 0;
+            const nameCounts = new Map(); // baseName -> currentCount
+
+            function getUniqueId(baseName) {
+                // Sanitize: lowercase, alphanumeric and underscores only, must not start with digit
+                let name = baseName.toLowerCase().replace(/[^a-z0-9_]/gi, '_').replace(/^[^a-z_]+/, '');
+                if (!name || name === '_') name = 'token';
+
+                if (!nameCounts.has(name)) {
+                    nameCounts.set(name, 0);
+                    return name;
+                } else {
+                    const count = nameCounts.get(name) + 1;
+                    nameCounts.set(name, count);
+                    return `${name}_${count}`;
+                }
+            }
 
             allEntries.forEach((e, idx) => {
                 const resp = e.entry.response;
@@ -1518,7 +1533,7 @@
                         const ck = parseCookieHeader(h.value);
                         if (!ck || !looksLikeToken(ck.value)) return;
                         tokens.push({
-                            id: 'tok_' + tid++,
+                            id: getUniqueId(ck.name),
                             kind: 'cookie',
                             name: ck.name,
                             value: ck.value,
@@ -1532,7 +1547,7 @@
                     } else {
                         if (!looksLikeToken(h.value)) return;
                         tokens.push({
-                            id: 'tok_' + tid++,
+                            id: getUniqueId(h.name),
                             kind: pat.kind,
                             name: h.name,
                             value: h.value,
@@ -1563,7 +1578,7 @@
                             const parts = path.split('.');
                             const pyAccess = parts.map(p => `["${p}"]`).join('');
                             tokens.push({
-                                id: 'tok_' + tid++,
+                                id: getUniqueId(key),
                                 kind,
                                 name: key,
                                 value,
@@ -1926,7 +1941,7 @@
                     // Only emit extraction if another selected request consumes it
                     const isNeeded = [...consumers.values()].some(s => s.has(tok.id));
                     if (isNeeded && !extractedInMain.has(tok.id)) {
-                        const varName = tok.kind + '_' + tok.id.replace('tok_', '');
+                        const varName = tok.id;
                         if (C) lines.push('    # Extract ' + tok.kind + ' from response');
                         lines.push('    ' + varName + ' = ' + tok.extractCode.replace('response', 'resp_' + selIdx));
                         extractedInMain.set(tok.id, varName);
