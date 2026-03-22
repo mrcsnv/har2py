@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Har2Py — tls-client converter</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
     <style>
         *,
@@ -1147,6 +1147,134 @@
             border-color: var(--border2);
         }
 
+        /* ── Grok AI ── */
+        .btn-grok {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            color: var(--text2);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-family: var(--mono);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-right: 8px;
+        }
+
+        .btn-grok:hover {
+            background: var(--bg4);
+            color: var(--text);
+            border-color: var(--accent);
+        }
+
+        .btn-grok svg {
+            color: var(--accent);
+        }
+
+        .api-modal-input {
+            width: 100%;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 12px;
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 12px;
+            margin: 16px 0 8px;
+        }
+
+        .api-modal-hint {
+            font-size: 11px;
+            color: var(--text3);
+            margin-bottom: 16px;
+        }
+
+        .grok-explanation-container {
+            line-height: 1.7;
+            color: var(--text);
+            font-size: 15px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .grok-explanation-container h3 {
+            color: var(--accent);
+            margin-top: 24px;
+            margin-bottom: 12px;
+            font-size: 18px;
+            font-family: var(--sans);
+            font-weight: 700;
+        }
+
+        .grok-explanation-container p {
+            margin-bottom: 12px;
+        }
+
+        .grok-explanation-container code {
+            background: var(--bg3);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: var(--mono);
+            font-size: 13px;
+        }
+
+        .grok-explanation-container ul, .grok-explanation-container ol {
+            margin-bottom: 16px;
+            padding-left: 20px;
+        }
+
+        .grok-explanation-container li {
+            margin-bottom: 6px;
+        }
+
+        .grok-explanation-container table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 12px;
+            background: var(--bg2);
+            border-radius: var(--radius);
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .grok-explanation-container th, .grok-explanation-container td {
+            padding: 10px 12px;
+            text-align: left;
+            border: 1px solid var(--border);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .grok-explanation-container th {
+            background: var(--bg3);
+            color: var(--accent);
+            font-weight: 600;
+            font-family: var(--mono);
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+        }
+
+        .grok-explanation-container strong {
+            color: var(--accent);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            border-top-color: var(--accent);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         .legend-dot {
             width: 10px;
             height: 10px;
@@ -1390,7 +1518,11 @@
 
             <!-- Script tab -->
             <div id="pane-script" class="tab-pane active">
-                <div style="display:flex; justify-content:flex-end; margin-bottom:8px;">
+                <div style="display:flex; justify-content:flex-end; align-items:center; margin-bottom:8px;">
+                    <button class="btn-grok" id="btn-grok" onclick="explainWithGrok()" title="Explain session with Grok AI" style="display:none">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 6v6l4 2"/></svg>
+                        Explain with Grok
+                    </button>
                     <button class="btn-expand" onclick="openModal('script')" title="Expand view">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
                     </button>
@@ -1454,6 +1586,209 @@
     </div>
 
     <script>
+        // ──────────────────────────────────────────────
+        // Grok AI logic
+        // ──────────────────────────────────────────────
+        async function explainWithGrok() {
+            if (!entries || entries.length === 0) return;
+
+            const selectedEntries = entries.filter(e => e.selected);
+            if (selectedEntries.length === 0) {
+                showToast('Please select at least one request');
+                return;
+            }
+
+            // Create an optimized HAR summary for AI context
+            const harSummary = selectedEntries.map((e, i) => {
+                const req = e.entry.request;
+                const resp = e.entry.response;
+                return {
+                    step: i + 1,
+                    method: req.method,
+                    url: req.url,
+                    headers: req.headers.filter(h => !h.name.startsWith(':') && !['cookie', 'content-length'].includes(h.name.toLowerCase())).map(h => h.name),
+                    cookies: req.cookies.map(c => c.name),
+                    postData: req.postData ? { mimeType: req.postData.mimeType, size: req.postData.text?.length || 0 } : null,
+                    response: {
+                        status: resp.status,
+                        mimeType: resp.content.mimeType,
+                        size: resp.content.size
+                    }
+                };
+            });
+
+            const contextPayload = JSON.stringify(harSummary, null, 2);
+            const currentContextHash = generatedCode.length + '_' + 
+                Array.from(contextPayload.slice(0, 100))
+                    .reduce((h, c) => (h << 5) - h + c.charCodeAt(0), 0).toString(36);
+
+            // Check cache first
+            const cachedExplanation = localStorage.getItem('grok_explanation_cache');
+            const cachedForContext = localStorage.getItem('grok_explanation_context_hash');
+
+            if (cachedExplanation && cachedForContext === currentContextHash) {
+                showExplanationModal(cachedExplanation);
+                return;
+            }
+
+            let apiKey = localStorage.getItem('grok_api_key');
+            if (!apiKey) {
+                const key = await askForApiKey();
+                if (!key) return;
+                apiKey = key;
+                localStorage.setItem('grok_api_key', apiKey);
+            }
+
+            const overlay = document.getElementById('modal-overlay');
+            const title = document.getElementById('modal-title');
+            const body = document.getElementById('modal-body');
+
+            title.textContent = 'Analyzing Session with Grok AI';
+            body.innerHTML = `
+                <div class="grok-explanation-container" id="grok-output">
+                    <div style="text-align:center; padding: 40px;">
+                        <div class="loading-spinner"></div>
+                        <p style="margin-top:16px; color:var(--text3);">Grok is analyzing your web session flow...</p>
+                    </div>
+                </div>
+            `;
+            overlay.classList.add('active');
+
+            try {
+                const response = await fetch('https://api.x.ai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: 'grok-4-1-fast-reasoning',
+                        messages: [
+                            {
+                                role: 'system',
+                                content: 'You are a cybersecurity and web session expert. Analyze the provided HTTP session flow. Explain in English: 1. What is the objective of this session (e.g., Login, API auth, Data scraping). 2. How the session is maintained (cookies, tokens). 3. Detailed breakdown of key requests, identifying crucial headers and parameters. 4. Key security or identification tokens involved. Use clear sections and professional language.'
+                            },
+                            {
+                                role: 'user',
+                                content: `Analyze this web session flow (metadata of requests):\n\n${contextPayload}`
+                            }
+                        ],
+                        stream: false
+                    })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    if (response.status === 401) {
+                        localStorage.removeItem('grok_api_key');
+                        throw new Error('Invalid API Key. Please try again.');
+                    }
+                    throw new Error(err.error?.message || 'Failed to connect to Grok AI');
+                }
+
+                const data = await response.json();
+                const content = data.choices[0].message.content;
+                
+                localStorage.setItem('grok_explanation_cache', content);
+                localStorage.setItem('grok_explanation_context_hash', currentContextHash);
+
+                showExplanationModal(content);
+
+            } catch (err) {
+                body.innerHTML = `
+                    <div style="text-align:center; padding: 40px; color:var(--red);">
+                        <p>Error: ${err.message}</p>
+                        <button class="btn btn-sm" style="margin-top:16px;" onclick="explainWithGrok()">Try Again</button>
+                    </div>
+                `;
+            }
+        }
+
+        function showExplanationModal(content) {
+            const overlay = document.getElementById('modal-overlay');
+            const title = document.getElementById('modal-title');
+            const body = document.getElementById('modal-body');
+
+            title.textContent = 'Grok AI Analysis';
+            body.innerHTML = `<div class="grok-explanation-container">${renderMarkdown(content)}</div>`;
+            overlay.classList.add('active');
+        }
+
+        function renderMarkdown(text) {
+            if (!text) return "";
+            let html = text.trim();
+
+            // 1. Tables (handle before headers/bold to avoid conflicts)
+            const tableRegex = /((?:\|.*\|(?:\n|$))+)/g;
+            html = html.replace(tableRegex, (match) => {
+                const rows = match.trim().split('\n');
+                let table = '<table>';
+                let hasHead = false;
+                rows.forEach((row) => {
+                    if (row.includes('---')) return;
+                    const cells = row.split('|').filter((c, i) => i > 0 && i < row.split('|').length - 1);
+                    const tag = !hasHead ? 'th' : 'td';
+                    table += '<tr>' + cells.map(c => `<${tag}>${c.trim()}</${tag}>`).join('') + '</tr>';
+                    hasHead = true;
+                });
+                return table + '</table>';
+            });
+
+            // 2. Headers (### or 1.)
+            html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+            html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+            html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+            html = html.replace(/^(\d+\.\s+.*$)/gim, '<h3>$1</h3>');
+
+            // 3. Inline formatting
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            html = html.replace(/`(.*?)`/g, '<code>$1</code>');
+
+            // 4. Lists
+            html = html.replace(/^\s*-\s+(.*$)/gim, '<li>$1</li>');
+            html = html.replace(/(<li>.*<\/li>(?:\n<li>.*<\/li>)*)/g, '<ul>$1</ul>');
+
+            // 5. Paragraphs
+            const parts = html.split('\n\n');
+            html = parts.map(p => {
+                const trimmed = p.trim();
+                if (!trimmed) return '';
+                // Don't wrap if already a block element
+                if (/^<(h|table|ul|li)/i.test(trimmed)) return trimmed;
+                return `<p>${trimmed.replace(/\n/g, '<br>')}</p>`;
+            }).join('\n');
+
+            return html;
+        }
+
+        function askForApiKey() {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('modal-overlay');
+                const title = document.getElementById('modal-title');
+                const body = document.getElementById('modal-body');
+
+                title.textContent = 'Enter xAI (Grok) API Key';
+                body.innerHTML = `
+                    <div style="padding: 20px;">
+                        <p style="color:var(--text2);">To explain this session, we use the Grok AI API.</p>
+                        <input type="password" id="grok-key-input" class="api-modal-input" placeholder="xai-...">
+                        <p class="api-modal-hint">Your key is stored locally in your browser's Local Storage.</p>
+                        <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px;">
+                            <button class="btn btn-sm" onclick="this.closest('.modal-overlay')._resolveKey(null)">Cancel</button>
+                            <button class="btn btn-sm btn-primary" onclick="this.closest('.modal-overlay')._resolveKey(document.getElementById('grok-key-input').value)">Save & Continue</button>
+                        </div>
+                    </div>
+                `;
+
+                overlay.classList.add('active');
+                overlay._resolveKey = (val) => {
+                    overlay.classList.remove('active');
+                    resolve(val);
+                };
+            });
+        }
+
         // ──────────────────────────────────────────────
         // Modal logic
         // ──────────────────────────────────────────────
@@ -1541,8 +1876,38 @@
         let harData = null;
         let entries = [];
         let generatedCode = '';
+        let currentFilename = '';
 
         const MAX_RENDER = 1000;
+
+        window.onload = function() {
+            const saved = localStorage.getItem('har2py_last_script');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    generatedCode = data.code;
+                    
+                    // Show UI state
+                    showCode(generatedCode);
+                    document.querySelector('main').classList.add('wide-mode');
+                    document.getElementById('btn-clear').style.display = 'inline-block';
+                    
+                    // Update dropzone to show filename
+                    const dz = document.getElementById('drop-zone');
+                    dz.classList.add('has-file');
+                    dz.innerHTML = `
+                        <div class="har-summary">
+                          <span class="har-filename">${escHtml(data.filename)}</span>
+                          <span class="har-count">Restored session</span>
+                        </div>
+                    `;
+                    
+                    showToast('Last session restored');
+                } catch (e) {
+                    console.error('Failed to restore session', e);
+                }
+            }
+        };
 
         // ──────────────────────────────────────────────
         // File handling
@@ -1575,6 +1940,7 @@
                 showToast('❌ No entries found in HAR');
                 return;
             }
+            currentFilename = filename;
             entries = harData.log.entries.map((e, i) => ({
                 id: i,
                 method: e.request.method || 'GET',
@@ -1687,6 +2053,11 @@
 
             // Restore original layout (1/2 - 1/2)
             document.querySelector('main').classList.remove('wide-mode');
+
+            // Clear persistence
+            localStorage.removeItem('har2py_last_script');
+            localStorage.removeItem('grok_explanation_cache');
+            localStorage.removeItem('grok_explanation_code_hash');
         }
 
         // ──────────────────────────────────────────────
@@ -1950,6 +2321,15 @@
     
     // Switch to wide layout (1/3 - 2/3)
     document.querySelector('main').classList.add('wide-mode');
+    
+    // Persist script state
+    const scriptId = 'script_' + Date.now();
+    localStorage.setItem('har2py_last_script', JSON.stringify({
+        id: scriptId,
+        code: generatedCode,
+        filename: currentFilename || 'unknown.har',
+        timestamp: Date.now()
+    }));
     
     showToast('Script generated');
 }
@@ -2356,6 +2736,9 @@
             pre.innerHTML = highlight(code);
             document.getElementById('btn-copy').style.display = '';
             document.getElementById('btn-download').style.display = '';
+            
+            // Show Grok button
+            document.getElementById('btn-grok').style.display = 'flex';
         }
 
         function hideOutput() {
@@ -2370,6 +2753,9 @@
             document.getElementById('schema-placeholder').style.display = '';
             document.getElementById('schema-content').style.display = 'none';
             document.getElementById('schema-content').innerHTML = '';
+            
+            // Hide Grok button
+            document.getElementById('btn-grok').style.display = 'none';
         }
 
         function copyCode() {
