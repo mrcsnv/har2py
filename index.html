@@ -530,14 +530,31 @@
 
         /* ── Code output ── */
         .code-area {
-            flex: 1; min-height: 520px; max-width: 100%; background: var(--bg2); border: 1px solid var(--border);
-            border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column;
+            flex: 1;
+            min-height: 520px;
+            max-width: 100%;
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
             position: relative;
         }
+
         .code-area pre {
-            flex: 1; max-width: 100%; overflow-x: auto; overflow-y: auto; padding: 20px; margin: 0;
-            font-family: var(--mono); font-size: 12.5px; line-height: 1.75;
-            color: var(--text); white-space: pre; tab-size: 4;
+            flex: 1;
+            max-width: 100%;
+            overflow-x: auto;
+            overflow-y: auto;
+            padding: 20px;
+            margin: 0;
+            font-family: var(--mono);
+            font-size: 12.5px;
+            line-height: 1.75;
+            color: var(--text);
+            white-space: pre;
+            tab-size: 4;
         }
 
         .code-area pre::-webkit-scrollbar {
@@ -1091,26 +1108,27 @@
 <body>
 
     <header>
-    <a class="logo" href="#">
-        <div>
-            <div>Har2Py</div>
-            <div class="logo-sub">tls-client converter</div>
-        </div>
-    </a>
-    <div style="display: flex; align-items: center; gap: 12px;">
-        <div class="badge">using <span>tls-client</span> library by <a href="https://github.com/FlorianREGAZ" target="_blank" style="color: inherit; text-decoration: underline;">FlorianREGAZ</a></div>
-        <a href="https://github.com/mrcsnv/har2py" target="_blank"
-            style="color: var(--text2); display: flex; align-items: center; gap: 8px; transition: color 0.2s; text-decoration: none;"
-            onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text2)'">
-            <span style="font-size: 11px; font-weight: 500;">Star on GitHub</span>
-            <svg height="20" viewBox="0 0 16 16" version="1.1" width="20" aria-hidden="true" fill="currentColor">
-                <path
-                    d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z">
-                </path>
-            </svg>
+        <a class="logo" href="#">
+            <div>
+                <div>Har2Py</div>
+                <div class="logo-sub">tls-client converter</div>
+            </div>
         </a>
-    </div>
-</header>
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="badge">using <span>tls-client</span> library by <a href="https://github.com/FlorianREGAZ"
+                    target="_blank" style="color: inherit; text-decoration: underline;">FlorianREGAZ</a></div>
+            <a href="https://github.com/mrcsnv/har2py" target="_blank"
+                style="color: var(--text2); display: flex; align-items: center; gap: 8px; transition: color 0.2s; text-decoration: none;"
+                onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text2)'">
+                <span style="font-size: 11px; font-weight: 500;">Star on GitHub</span>
+                <svg height="20" viewBox="0 0 16 16" version="1.1" width="20" aria-hidden="true" fill="currentColor">
+                    <path
+                        d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z">
+                    </path>
+                </svg>
+            </a>
+        </div>
+    </header>
 
     <section class="hero">
         <h1>Convert <em>.har</em> to Python</h1>
@@ -1225,7 +1243,8 @@
                     <button class="tab" id="tab-schema" onclick="switchTab('schema')">Schema</button>
                 </div>
                 <div class="panel-actions">
-                    <button class="btn btn-sm btn-icon" id="btn-copy" onclick="copyCode()" style="display:none">Copy</button>
+                    <button class="btn btn-sm btn-icon" id="btn-copy" onclick="copyCode()"
+                        style="display:none">Copy</button>
                     <button class="btn btn-sm btn-icon" id="btn-download" onclick="downloadCode()"
                         style="display:none">Download</button>
                 </div>
@@ -1263,7 +1282,8 @@
 
     <footer>
         <p>Converts browser sessions to <a href="https://pypi.org/project/tls-client/" target="_blank">tls-client</a>
-            (Python port by <a href="https://github.com/FlorianREGAZ" target="_blank" style="color: var(--accent);">FlorianREGAZ</a>) Python scripts</p>
+            (Python port by <a href="https://github.com/FlorianREGAZ" target="_blank"
+                style="color: var(--accent);">FlorianREGAZ</a>) Python scripts</p>
         <p>Runs 100% in your browser · No data uploaded</p>
     </footer>
 
@@ -1321,8 +1341,8 @@
             }));
 
             if (entries.length > 2000) {
-        showToast(`Loaded ${entries.length.toLocaleString()} requests — list truncated for performance. Filter to view specifics.`);
-    }
+                showToast(`Loaded ${entries.length.toLocaleString()} requests — list truncated for performance. Filter to view specifics.`);
+            }
 
             renderDropZone(filename, entries.length);
             document.getElementById('options-section').style.display = '';
@@ -1439,8 +1459,13 @@
             { key: /^(api_key|apiKey|api-key|x-api-key)$/i, kind: 'api_key', extract: 'json' },
             { key: /^(session_token|sessionToken|session-token)$/i, kind: 'session_token', extract: 'json' },
             { key: /^(csrf_token|csrfToken|_csrf|csrf)$/i, kind: 'csrf', extract: 'json' },
-            { key: /^(sid|session_id|sessionId)$/i, kind: 'session_id', extract: 'json' },
+            { key: /^(sid|session_id|sessionId|sessionid)$/i, kind: 'session_id', extract: 'json' },
             { key: /^(user_id|userId|uid)$/i, kind: 'user_id', extract: 'json' },
+            { key: /^(client_id|clientId|client-id)$/i, kind: 'client_id', extract: 'json' },
+            { key: /^(code_challenge|codeChallenge|code-challenge)$/i, kind: 'code_challenge', extract: 'json' },
+            { key: /^(state|State)$/i, kind: 'state', extract: 'json' },
+            { key: /^(redirect_uri|redirectUri|redirect-uri)$/i, kind: 'redirect_uri', extract: 'json' },
+            { key: /^(PHPSESSID|phpSESSID|php-sess-id)$/i, kind: 'PHPSESSID', extract: 'json' },
             // Response headers
             { key: /^set-cookie$/i, kind: 'cookie', extract: 'header' },
             { key: /^x-auth-token$/i, kind: 'x_auth_token', extract: 'header' },
@@ -1672,11 +1697,11 @@
             });
 
             generatedCode = buildPython(sel, opts, allTokens, consumers);
-    showCode(generatedCode);
-    buildStats(sel, opts);
-    buildSchema(sel, allTokens, consumers);
-    showToast('Script generated');
-}
+            showCode(generatedCode);
+            buildStats(sel, opts);
+            buildSchema(sel, allTokens, consumers);
+            showToast('Script generated');
+        }
 
         function buildPython(sel, opts, allTokens, consumers) {
             const lines = [];
