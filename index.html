@@ -1757,6 +1757,9 @@
                 lines.push('');
             }
 
+            // Track which tokens are actually used in each function body
+            const fnActuallyUsedTokens = new Map(); // selIdx -> Set of tokId
+
             // Per-request functions
             sel.forEach((e, selIdx) => {
                 const req = e.entry.request;
@@ -1764,21 +1767,13 @@
                 const method = req.method;
                 const fnName = makeFnName(method, url, e.id);
 
-                // Tokens this function needs as parameters
+                // Tokens this function potentially needs (from resolveConsumers)
                 const neededTokIds = consumers.get(selIdx) || new Set();
                 const neededToks = [...neededTokIds].map(id => tokById[id]).filter(Boolean);
 
-                // Build param string
-                const params = [];
-                if (!opts.session) params.push('session' + (T ? ': tls_client.Session' : ''));
-                neededToks.forEach(tok => {
-                    params.push(tok.id + (T ? ': str' : ''));
-                });
-
+                const actuallyUsed = new Set();
                 const headersObj = {};
                 const cookiesObj = {};
-                const tokenizedHeaders = new Set(); // header names replaced by token var
-                const tokenizedCookies = new Set();
 
                 if (opts.headers && req.headers) {
                     req.headers.forEach(h => {
@@ -1787,9 +1782,8 @@
                         // Check if this header value is a known token
                         const tok = neededToks.find(t => h.value && h.value.includes(t.value));
                         if (tok) {
-                            // Replace literal value with variable reference
                             headersObj[h.name] = '__TOKEN__' + tok.id;
-                            tokenizedHeaders.add(h.name);
+                            actuallyUsed.add(tok.id);
                         } else {
                             headersObj[h.name] = h.value;
                         }
@@ -1801,36 +1795,105 @@
                         const tok = neededToks.find(t => c.value && c.value.includes(t.value));
                         if (tok) {
                             cookiesObj[c.name] = '__TOKEN__' + tok.id;
-                            tokenizedCookies.add(c.name);
+                            actuallyUsed.add(tok.id);
                         } else {
                             cookiesObj[c.name] = c.value;
                         }
                     });
                 }
 
+                // Query params
+                const queryParams = req.queryString || [];
+                const queryParamsProcessed = [];
+                if (queryParams.length) {
+                    queryParams.forEach(p => {
+                        const tok = neededToks.find(t => p.value && p.value.includes(t.value));
+                        if (tok) {
+                            queryParamsProcessed.push({ name: p.name, value: '__TOKEN__' + tok.id });
+                            actuallyUsed.add(tok.id);
+                        } else {
+                            queryParamsProcessed.push(p);
+                        }
+                    });
+                }
+
+                // Body
                 const hasBody = req.postData && req.postData.text;
                 const contentType = (headersObj['content-type'] || headersObj['Content-Type'] || '').toLowerCase();
                 const isJson = contentType.includes('application/json');
                 const isForm = contentType.includes('application/x-www-form-urlencoded');
+                let bodyProcessed = null;
+                let bodyVar = null;
+
+                if (hasBody) {
+                    if (isJson) {
+                        try {
+                            const parsed = JSON.parse(req.postData.text);
+                            const bodyTok = neededToks.find(t => req.postData.text.includes(t.value));
+                            if (bodyTok) {
+                                actuallyUsed.add(bodyTok.id);
+                                let jsonStr = JSON.stringify(parsed, null, 4);
+                                jsonStr = jsonStr.replace(new RegExp(escapeRegex(bodyTok.value), 'g'), '" + ' + bodyTok.id + ' + "');
+                                bodyProcessed = jsonStr.replace(/^/mg, '    ').trimStart();
+                            } else {
+                                bodyProcessed = JSON.stringify(parsed, null, 4).replace(/^/mg, '    ').trimStart();
+                            }
+                            bodyVar = 'json';
+                        } catch {
+                            bodyProcessed = pyStr(req.postData.text);
+                            bodyVar = 'data';
+                        }
+                    } else {
+                        const bodyTok = neededToks.find(t => req.postData.text.includes(t.value));
+                        if (bodyTok) {
+                            actuallyUsed.add(bodyTok.id);
+                            bodyProcessed = 'f' + pyStr(req.postData.text.replace(new RegExp(escapeRegex(bodyTok.value), 'g'), '{' + bodyTok.id + '}'));
+                        } else {
+                            bodyProcessed = pyStr(req.postData.text);
+                        }
+                        bodyVar = 'data';
+                    }
+                }
+
+                // URL replacement logic BEFORE storing actuallyUsed and building params
+                let pyUrl = pyStr(url);
+                const urlTok = neededToks.find(t => url.includes(t.value));
+                if (urlTok) {
+                    actuallyUsed.add(urlTok.id);
+                    pyUrl = 'f' + pyStr(url.replace(new RegExp(escapeRegex(urlTok.value), 'g'), '{' + urlTok.id + '}'));
+                }
+
+                fnActuallyUsedTokens.set(selIdx, actuallyUsed);
+
+                // ─── GENERATION STARTS HERE ───
+
+                // Build param string
+                const params = [];
+                if (!opts.session) params.push('session' + (T ? ': tls_client.Session' : ''));
+                [...actuallyUsed].sort().forEach(id => {
+                    params.push(id + (T ? ': str' : ''));
+                });
 
                 if (C) lines.push('# Request ' + (selIdx + 1) + ': ' + method + ' ' + truncUrl(url));
                 lines.push('def ' + fnName + '(' + params.join(', ') + ')' + (T ? ' -> tls_client.response.Response' : '') + ':');
 
-                if (neededToks.length && C) {
-                    lines.push('    # Auto-extracted token dependencies: ' + neededToks.map(t => t.id + ' (' + t.kind + ')').join(', '));
+                if (actuallyUsed.size && C) {
+                    const usedToksInfo = [...actuallyUsed].sort().map(id => {
+                        const t = tokById[id];
+                        return id + ' (' + t.kind + ')';
+                    });
+                    lines.push('    # Auto-extracted token dependencies: ' + usedToksInfo.join(', '));
                 }
 
-                lines.push('    url = ' + pyStr(url));
+                lines.push('    url = ' + pyUrl);
                 lines.push('');
 
-                // Headers — emit token vars inline
+                // Headers
                 if (Object.keys(headersObj).length) {
                     lines.push('    headers' + (T ? ': Dict[str, str]' : '') + ' = {');
                     Object.entries(headersObj).forEach(([k, v]) => {
                         if (typeof v === 'string' && v.startsWith('__TOKEN__')) {
                             const tokId = v.slice(9);
-                            const tok = tokById[tokId];
-                            // If the original header value is "Bearer <token>" style, reconstruct it
                             const origVal = req.headers.find(h => h.name === k)?.value || '';
                             const bearerMatch = origVal.match(/^(Bearer |Basic |Token )/i);
                             const prefix = bearerMatch ? bearerMatch[1] : '';
@@ -1859,46 +1922,23 @@
                     lines.push('');
                 }
 
-                // Body — replace token literals inside JSON body
-                let bodyVar = null;
-                if (hasBody) {
-                    if (isJson) {
-                        try {
-                            const parsed = JSON.parse(req.postData.text);
-                            // Replace token values inside parsed object
-                            const bodyTok = neededToks.find(t => req.postData.text.includes(t.value));
-                            if (bodyTok) {
-                                // Serialize and replace literal string
-                                let jsonStr = JSON.stringify(parsed, null, 4);
-                                jsonStr = jsonStr.replace(new RegExp(escapeRegex(bodyTok.value), 'g'), '" + ' + bodyTok.id + ' + "');
-                                lines.push('    json_data = ' + jsonStr.replace(/^/mg, '    ').trimStart());
-                            } else {
-                                lines.push('    json_data = ' + JSON.stringify(parsed, null, 4).replace(/^/mg, '    ').trimStart());
-                            }
-                            bodyVar = 'json';
-                        } catch {
-                            lines.push('    data = ' + pyStr(req.postData.text));
-                            bodyVar = 'data';
-                        }
-                    } else if (isForm) {
-                        lines.push('    data = ' + pyStr(req.postData.text));
-                        if (C) lines.push('    # URL-encoded form data');
-                        bodyVar = 'data';
+                // Body
+                if (bodyVar) {
+                    if (bodyVar === 'json') {
+                        lines.push('    json_data = ' + bodyProcessed);
                     } else {
-                        lines.push('    data = ' + pyStr(req.postData.text));
-                        bodyVar = 'data';
+                        lines.push('    data = ' + bodyProcessed);
+                        if (isForm && C) lines.push('    # URL-encoded form data');
                     }
                     lines.push('');
                 }
 
                 // Query params
-                const queryParams = req.queryString;
-                if (queryParams && queryParams.length) {
+                if (queryParamsProcessed.length) {
                     lines.push('    params' + (T ? ': Dict[str, str]' : '') + ' = {');
-                    queryParams.forEach(p => {
-                        const tok = neededToks.find(t => p.value && p.value.includes(t.value));
-                        if (tok) {
-                            lines.push('        ' + pyStr(p.name) + ': ' + tok.id + ',');
+                    queryParamsProcessed.forEach(p => {
+                        if (typeof p.value === 'string' && p.value.startsWith('__TOKEN__')) {
+                            lines.push('        ' + pyStr(p.name) + ': ' + p.value.slice(9) + ',');
                         } else {
                             lines.push('        ' + pyStr(p.name) + ': ' + pyStr(p.value) + ',');
                         }
@@ -1910,7 +1950,7 @@
                 const callArgs = ['url'];
                 if (Object.keys(headersObj).length) callArgs.push('headers=headers');
                 if (Object.keys(cookiesObj).length) callArgs.push('cookies=cookies');
-                if (queryParams && queryParams.length) callArgs.push('params=params');
+                if (queryParamsProcessed.length) callArgs.push('params=params');
                 if (bodyVar === 'json') callArgs.push('json=json_data');
                 else if (bodyVar) callArgs.push('data=data');
                 if (opts.timeout) callArgs.push('timeout_seconds=TIMEOUT');
@@ -1942,19 +1982,18 @@
 
             sel.forEach((e, selIdx) => {
                 const fnName = makeFnName(e.entry.request.method, e.entry.request.url, e.id);
-                const neededTokIds = consumers.get(selIdx) || new Set();
-                const neededToks = [...neededTokIds].map(id => tokById[id]).filter(Boolean);
+                const actuallyUsedIds = fnActuallyUsedTokens.get(selIdx) || new Set();
+                const actuallyUsedToks = [...actuallyUsedIds].sort().map(id => tokById[id]).filter(Boolean);
 
                 // Build call args for main
                 const callArgs = [];
-                neededToks.forEach(tok => {
+                if (!opts.session) callArgs.push('session=session');
+                actuallyUsedToks.forEach(tok => {
                     const varName = extractedInMain.get(tok.id);
                     callArgs.push(tok.id + '=' + (varName || pyStr(tok.value)));
                 });
 
-                const callStr = callArgs.length
-                    ? fnName + '(' + callArgs.join(', ') + ')'
-                    : fnName + '()';
+                const callStr = fnName + '(' + callArgs.join(', ') + ')';
 
                 lines.push('    # ' + e.entry.request.method + ' ' + truncUrl(e.entry.request.url, 55));
                 lines.push('    resp_' + selIdx + ' = ' + callStr);
@@ -1963,9 +2002,9 @@
                 // After this call, check if it produces any tokens needed by later requests
                 const producedTokens = allTokens.filter(t => t.producerIdx === e.id);
                 producedTokens.forEach(tok => {
-                    // Only emit extraction if another selected request consumes it
-                    const isNeeded = [...consumers.values()].some(s => s.has(tok.id));
-                    if (isNeeded && !extractedInMain.has(tok.id)) {
+                    // Only emit extraction if another selected request actually uses it
+                    const isUsedLater = [...fnActuallyUsedTokens.values()].some(s => s.has(tok.id));
+                    if (isUsedLater && !extractedInMain.has(tok.id)) {
                         const varName = tok.id;
                         if (C) lines.push('    # Extract ' + tok.kind + ' from response');
                         lines.push('    ' + varName + ' = ' + tok.extractCode.replace('response', 'resp_' + selIdx));
