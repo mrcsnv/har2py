@@ -163,6 +163,15 @@
             width: 100%;
             margin: 0 auto;
             padding: 28px 24px 40px;
+            transition: grid-template-columns 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        main.wide-mode {
+            grid-template-columns: 1fr 2fr;
+        }
+
+        main.wide-mode .panel-right {
+            max-width: 1000px;
         }
 
         @media (max-width: 900px) {
@@ -1470,6 +1479,9 @@
             document.getElementById('options-section').style.display = 'none';
             document.getElementById('btn-clear').style.display = 'none';
             hideOutput();
+
+            // Restore original layout (1/2 - 1/2)
+            document.querySelector('main').classList.remove('wide-mode');
         }
 
         // ──────────────────────────────────────────────
@@ -1727,11 +1739,15 @@
             });
 
             generatedCode = buildPython(sel, opts, allTokens, consumers);
-            showCode(generatedCode);
-            buildStats(sel, opts);
-            buildSchema(sel, allTokens, consumers);
-            showToast('Script generated');
-        }
+    showCode(generatedCode);
+    buildStats(sel, opts);
+    buildSchema(sel, allTokens, consumers);
+    
+    // Switch to wide layout (1/3 - 2/3)
+    document.querySelector('main').classList.add('wide-mode');
+    
+    showToast('Script generated');
+}
 
         function buildPython(sel, opts, allTokens, consumers) {
             const lines = [];
